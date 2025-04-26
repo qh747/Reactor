@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include "common/utils.h"
 
-namespace common {
+namespace COMMON {
 
 // 日志宏定义
 #define LOG(level) Logger(level, StringHelper::GetFileName(__FILE__), __LINE__)
@@ -58,7 +58,7 @@ public:
     /**
      * @brief 设置是否将日志写入文件
      * @param enabled 是否将日志写入文件
-    */
+     */
     static inline void enableWriteFile(bool enabled = true) {
         m_enableWriteFile.store(enabled);
     }
@@ -80,7 +80,7 @@ public:
      * @param manip 输入值
      * @return 日志流式代理类
      */
-     Logger& operator<<(std::ostream& (*manip)(std::ostream&)) {
+    Logger& operator<<(std::ostream& (*manip)(std::ostream&)) {
         manip(m_buffer);
         return *this;
     }
@@ -118,4 +118,4 @@ private:
     static LogPrintMap LogPrintCbMap;
 };
 
-}; // namespace common
+}; // namespace COMMON

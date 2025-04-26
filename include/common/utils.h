@@ -1,7 +1,8 @@
 #pragma once
 #include <string>
+#include <cstdint>
 
-namespace common {
+namespace COMMON {
 
 /**
  * @brief 禁止构造基类
@@ -91,4 +92,42 @@ public:
     static bool CreateDirectory(const std::string& path);
 };
 
-}; // namespace common
+/**
+ * @brief 地址帮助类
+ */
+class AddrHelper : public NoncopyableConstructable {
+public:
+    /**
+     * @brief  从网络字节序转换为主机字节序
+     * @return 转换结果
+     * @param  ipAddrNet  网络字节序ip地址
+     * @param  ipAddrHost 主机字节序ip地址
+     */
+    static bool IpAddrFromNetToHost(const std::string& ipAddrNet, std::string& ipAddrHost);
+
+    /**
+     * @brief  从主机字节序转换为网络字节序
+     * @return 转换结果
+     * @param  ipAddrHost 主机字节序ip地址
+     * @param  ipAddrNet  网络字节序ip地址
+     */
+    static bool IpAddrFromHostToNet(const std::string& ipAddrHost, std::string& ipAddrNet);
+
+    /**
+     * @brief  从网络字节序转换为主机字节序
+     * @return 转换结果
+     * @param  portNet  网络字节序端口
+     * @param  portHost 主机字节序端口
+     */
+    static bool PortFromNetToHost(uint16_t portNet, uint16_t& portHost);
+
+    /**
+     * @brief  从主机字节序转换为网络字节序
+     * @return 转换结果
+     * @param  portHost 主机字节序端口
+     * @param  portNet  网络字节序端口
+     */
+    static bool PortFromHostToNet(uint16_t portHost, uint16_t& portNet);
+};
+
+}; // namespace COMMON

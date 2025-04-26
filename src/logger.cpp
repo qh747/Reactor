@@ -3,14 +3,14 @@
 #include <unistd.h>
 #include "common/logger.h"
 
-namespace common {
+namespace COMMON {
+
+#define CURRANT_TIME TimeHelper::GetCurrentTime()
 
 std::mutex Logger::LogPrintCbLock;
 Logger::LogPrintMap Logger::LogPrintCbMap;
-std::atomic<LogLevel> Logger::m_lowestLevel { LogLevel::DEBUG };
-std::atomic<bool> Logger::m_enableWriteFile { true };
-
-#define CURRANT_TIME TimeHelper::GetCurrentTime()
+std::atomic<bool> Logger::m_enableWriteFile{true};
+std::atomic<LogLevel> Logger::m_lowestLevel{LogLevel::DEBUG};
 
 class LogFileWriter : public Noncopyable {
 public:
@@ -84,10 +84,10 @@ void Logger::flush() {
             if (m_enableWriteFile) {
                 LogFileWriter::Instance().write(ss.str());
             }
-            
+
             std::cout << ss.str();
         };
-        
+
         LogPrintCbMap[LogLevel::INFO] = [](const std::string& file, int line, const std::string& str) {
             std::lock_guard<std::mutex> lock(LogPrintCbLock);
 
@@ -97,7 +97,7 @@ void Logger::flush() {
             if (m_enableWriteFile) {
                 LogFileWriter::Instance().write(ss.str());
             }
-            
+
             std::cout << ss.str();
         };
 
@@ -110,7 +110,7 @@ void Logger::flush() {
             if (m_enableWriteFile) {
                 LogFileWriter::Instance().write(ss.str());
             }
-            
+
             std::cout << ss.str();
         };
 
@@ -123,7 +123,7 @@ void Logger::flush() {
             if (m_enableWriteFile) {
                 LogFileWriter::Instance().write(ss.str());
             }
-            
+
             std::cout << ss.str();
         };
 
@@ -136,7 +136,7 @@ void Logger::flush() {
             if (m_enableWriteFile) {
                 LogFileWriter::Instance().write(ss.str());
             }
-            
+
             std::cout << ss.str();
             std::exit(EXIT_FAILURE);
         };
@@ -147,4 +147,4 @@ void Logger::flush() {
     }
 }
 
-} // namespace common
+} // namespace COMMON

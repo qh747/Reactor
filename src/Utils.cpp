@@ -1,10 +1,11 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include <unordered_map>
 #include <sys/stat.h>
-#include "common/utils.h"
+#include "Common/Utils.h"
 
-namespace COMMON {
+namespace Common {
 
 std::string TimeHelper::GetCurrentTime() {
     auto now = std::chrono::system_clock::now();
@@ -38,6 +39,39 @@ const char* StringHelper::GetFileName(const char* path) {
     return file;
 }
 
+std::string StringHelper::EventTypeToString(Event_t event) {
+    static const std::unordered_map<Event_t, std::string> EventTypeStrings = {
+        {Event_t::EvTypeNone, "None"},
+        {Event_t::EvTypeRead, "Read"},
+        {Event_t::EvTypeWrite, "Write"},
+        {Event_t::EvTypeReadWrite, "ReadWrite"},
+        {Event_t::EvTypeClose, "Close"},
+        {Event_t::EvTypeError, "Error"}};
+
+    auto it = EventTypeStrings.find(event);
+    if (it != EventTypeStrings.end()) {
+        return it->second;
+    }
+
+    // 对于复合值或未知值，返回其数值表示
+    return "EventType(" + std::to_string(static_cast<int>(event)) + ")";
+}
+
+std::string StringHelper::StateTypeToString(State_t state) {
+    static const std::unordered_map<State_t, std::string> StateTypeStrings = {
+        {State_t::StatePending, "Pending "},
+        {State_t::StateInLoop, "InLoop"},
+        {State_t::StateNotInLoop, "NotInLoop"}};
+
+    auto it = StateTypeStrings.find(state);
+    if (it != StateTypeStrings.end()) {
+        return it->second;
+    }
+
+    // 如果传入的值不在映射中，返回其数值表示
+    return "StateType(" + std::to_string(static_cast<int>(state)) + ")";
+}
+
 std::string DirHelper::GetDirectory(const std::string& path) {
     std::size_t found = path.find_last_of("/\\");
     if (found != std::string::npos) {
@@ -64,4 +98,4 @@ bool DirHelper::CreateDirectory(const std::string& path) {
     return true;
 }
 
-} // namespace COMMON
+} // namespace Common

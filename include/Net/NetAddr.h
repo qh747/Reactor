@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <netinet/in.h>
 
-namespace NET {
+namespace Net {
 
 /**
  * @brief 网络地址类型
@@ -105,4 +105,4 @@ private:
     sockaddr_in m_addr;
 };
 
-}; // namespace NET
+}; // namespace Net

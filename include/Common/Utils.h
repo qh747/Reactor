@@ -1,7 +1,8 @@
 #pragma once
 #include <string>
+#include "Common/DataDef.h"
 
-namespace COMMON {
+namespace Common {
 
 /**
  * @brief 禁止构造基类
@@ -62,6 +63,18 @@ public:
      * @param  path 文件路径
      */
     static const char* GetFileName(const char* path);
+
+    /**
+     * @brief 获取事件类型字符串
+     * @return 事件类型字符串
+     */
+    static std::string EventTypeToString(Event_t event);
+
+    /**
+     * @brief 获取状态类型字符串
+     * @return 状态类型字符串
+     */
+    static std::string StateTypeToString(State_t state);
 };
 
 /**
@@ -91,4 +104,4 @@ public:
     static bool CreateDirectory(const std::string& path);
 };
 
-}; // namespace COMMON
+}; // namespace Common

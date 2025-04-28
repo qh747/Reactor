@@ -1,8 +1,8 @@
 # 设置测试程序名称
-set(TEST_NAME testNetAddr)
+set(TEST_NAME TestNetAddr)
 
 # 添加测试程序
-add_executable(${TEST_NAME} testNetAddr.cpp)
+add_executable(${TEST_NAME} TestNetAddr.cpp)
 
 # 添加依赖
 add_dependencies(${TEST_NAME} ${REACTOR_LIB_STATIC})

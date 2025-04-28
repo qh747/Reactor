@@ -2,19 +2,19 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <arpa/inet.h>
-#include "common/logger.h"
-#include "net/netAddr.h"
-using namespace COMMON;
+#include "Common/Logger.h"
+#include "Net/NetAddr.h"
+using namespace Common;
 
-namespace NET {
+namespace Net {
 
 InetAddrV4::InetAddrV4(const std::string& ip, uint16_t port) {
     if (ip.empty() || 0 == port) {
         throw std::runtime_error("Invalid input param");
     }
 
-    memset(&m_addr, 0, sizeof(m_addr)); 
-    m_addr.sin_family = AF_INET; 
+    memset(&m_addr, 0, sizeof(m_addr));
+    m_addr.sin_family = AF_INET;
 
     if (inet_pton(AF_INET, ip.c_str(), &m_addr.sin_addr) != 1) {
         throw std::runtime_error("Invalid ip address");
@@ -27,7 +27,8 @@ InetAddrV4::InetAddrV4(const std::string& ip, uint16_t port) {
     }
 }
 
-InetAddrV4::InetAddrV4(const sockaddr_in& addr) : m_addr(addr) {
+InetAddrV4::InetAddrV4(const sockaddr_in& addr)
+    : m_addr(addr) {
     if (!this->valid()) {
         throw std::runtime_error("Invalid socket address");
     }
@@ -49,12 +50,12 @@ bool InetAddrV4::getIpAddr(std::string& ip) const {
         return false;
     }
 
-    char buffer[INET_ADDRSTRLEN]; 
+    char buffer[INET_ADDRSTRLEN];
     if (nullptr == inet_ntop(AF_INET, &(m_addr.sin_addr), buffer, INET_ADDRSTRLEN)) {
         LOG_ERROR << "Get ip address error. call inet_ntop() failed";
         return false;
     }
-    
+
     ip = std::string(buffer);
     return true;
 }
@@ -86,4 +87,4 @@ bool InetAddrV4::valid() const {
     return true;
 }
 
-} // namespace NET
+} // namespace Net

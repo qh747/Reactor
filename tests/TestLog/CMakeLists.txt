@@ -1,8 +1,8 @@
 # 设置测试程序名称
-set(TEST_NAME testLog)
+set(TEST_NAME TestLog)
 
 # 添加测试程序
-add_executable(${TEST_NAME} testLog.cpp)
+add_executable(${TEST_NAME} TestLog.cpp)
 
 # 添加依赖
 add_dependencies(${TEST_NAME} ${REACTOR_LIB_STATIC})

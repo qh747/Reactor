@@ -10,6 +10,7 @@ using namespace Common;
 namespace Net {
 
 // 前置声明
+class EpPoller;
 class EventLoop;
 
 /**
@@ -17,6 +18,10 @@ class EventLoop;
  * @brief 通道类
  */
 class Channel : public Noncopyable, public std::enable_shared_from_this<Channel> {
+public:
+    // 允许以下友元类修改channel状态
+    friend class EpPoller;
+
 public:
     using Ptr = std::shared_ptr<Channel>;
     using EventLoopPtr = std::shared_ptr<EventLoop>;
@@ -30,37 +35,51 @@ public:
 
 public:
     /**
-     * @brief 事件处理
+     * @brief  开启channel
+     * @return 开启结果
+     * @param type 监听的事件类型
+     */
+    bool start(Event_t type);
+
+    /**
+     * @brief  更新监听事件
+     * @return 更新结果
+     */
+    bool update(Event_t type);
+
+    /**
+     * @brief  关闭channel
+     * @return 关闭结果
+     */
+    bool shutdown();
+
+    /**
+     * @brief  事件处理
+     * @return 处理结果
      * @param type 发生事件类型
      * @param recvTime 发生事件时间
      */
-    void handleEvent(Event_t type, Timestamp recvTime);
+    bool handleEvent(Event_t type, Timestamp recvTime);
 
     /**
-     * @brief 设置监听事件类型
-     */
-    void setListenEvent(Event_t type);
-
-public:
-    /**
-     * @brief 设置事件回调函数
+     * @brief  设置事件回调函数
+     * @return 设置结果
      * @param type 事件类型
      * @param cb 回调函数
      */
-    inline void setEventCb(Event_t type, EventCb cb) {
-        m_evCbMap[type] = std::move(cb);
-    }
+    bool setEventCb(Event_t type, EventCb cb);
 
+public:
     /**
-     * @brief 设置状态
-     * @param state 状态
+     * @brief  获取文件描述符
+     * @return 文件描述符
      */
-    inline void setState(State_t state) {
-        m_state = state;
+    inline int getFd() const {
+        return m_fd;
     }
 
     /**
-     * @brief 获取状态
+     * @brief  获取状态
      * @return 状态
      */
     inline State_t getState() const {
@@ -68,11 +87,11 @@ public:
     }
 
     /**
-     * @brief 获取文件描述符
-     * @return 文件描述符
+     * @brief  获取监听事件类型
+     * @return 事件类型
      */
-    inline int getFd() const {
-        return m_fd;
+    inline Event_t getEvType() const {
+        return m_listenEvType;
     }
 
     /**
@@ -82,6 +101,23 @@ public:
     inline EventLoopPtr getOwnerLoop() const {
         return m_ownerLoopPtr;
     }
+
+private:
+    /**
+     * @brief 设置状态
+     * @param state 状态
+     */
+    inline void setState(State_t state) {
+        m_state = state;
+    }
+
+    /**
+     * @brief  无需校验的事件处理
+     * @return 处理结果
+     * @param type 发生事件类型
+     * @param recvTime 发生事件时间
+     */
+    bool handleEventWithoutCheck(Event_t type, Timestamp recvTime);
 
 private:
     // channel关联事件句柄id

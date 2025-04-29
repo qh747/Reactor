@@ -44,9 +44,19 @@ std::string StringHelper::EventTypeToString(Event_t event) {
         {Event_t::EvTypeNone, "None"},
         {Event_t::EvTypeRead, "Read"},
         {Event_t::EvTypeWrite, "Write"},
-        {Event_t::EvTypeReadWrite, "ReadWrite"},
         {Event_t::EvTypeClose, "Close"},
-        {Event_t::EvTypeError, "Error"}};
+        {Event_t::EvTypeError, "Error"},
+        {Event_t::EvTypeReadWrite, "Read | Write"},
+        {Event_t::EvTypeReadClose, "Read | Close"},
+        {Event_t::EvTypeReadError, "Read | Error"},
+        {Event_t::EvTypeWriteClose, "Write | Close"},
+        {Event_t::EvTypeWriteError, "Write | Error"},
+        {Event_t::EvTypeCloseError, "Close | Error"},
+        {Event_t::EvTypeReadWriteClose, "Read | Write | Close"},
+        {Event_t::EvTypeReadWriteError, "Read | Write | Error"},
+        {Event_t::EvTypeReadCloseError, "Close | Error"},
+        {Event_t::EvTypeWriteCloseError, "Write | Close | Error"},
+        {Event_t::EvTypeAll, "Read | Write | Close | Error"}};
 
     auto it = EventTypeStrings.find(event);
     if (it != EventTypeStrings.end()) {
@@ -70,6 +80,20 @@ std::string StringHelper::StateTypeToString(State_t state) {
 
     // 如果传入的值不在映射中，返回其数值表示
     return "StateType(" + std::to_string(static_cast<int>(state)) + ")";
+}
+
+std::string StringHelper::EpollCtrlTypeToString(EpCtrl_t type) {
+    static const std::unordered_map<EpCtrl_t, std::string> EpollCtrlTypeStrings = {
+        {EpCtrl_t::EpollAdd, "EpollAdd"},
+        {EpCtrl_t::EpollModify, "EpollModify"},
+        {EpCtrl_t::EpollRemove, "EpollRemove"}};
+
+    auto it = EpollCtrlTypeStrings.find(type);
+    if (it != EpollCtrlTypeStrings.end()) {
+        return it->second;
+    }
+
+    return "EpollCtrlType(" + std::to_string(static_cast<int>(type)) + ")";
 }
 
 std::string DirHelper::GetDirectory(const std::string& path) {

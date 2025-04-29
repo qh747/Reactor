@@ -1,4 +1,5 @@
 #include "Common/Logger.h"
+#include "Net/EpPoller.h"
 #include "Factory/PollerFactory.h"
 
 namespace Factory {
@@ -8,7 +9,7 @@ Poller::Ptr PollerFactory::CreatePoller(Poller_t type, Poller::EventLoopPtr loop
         return nullptr;
     }
     else if (Poller_t::PollerEpoll == type) {
-        return nullptr;
+        return std::make_shared<EpPoller>(loop);
     }
     else {
         LOG_ERROR << "Create poller error. invalid poller type. type: " << static_cast<int>(type);

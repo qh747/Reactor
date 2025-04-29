@@ -37,7 +37,7 @@ public:
      * @param timeoutMs 等待时间
      * @param activeChannels 事件触发的channel
      */
-    virtual Timestamp poll(int timeoutMs, ChannelList& activeChannels) = 0;
+    virtual Timestamp wait(int timeoutMs, ChannelList& activeChannels) = 0;
 
     /**
      * @brief  更新channel
@@ -53,7 +53,6 @@ public:
      */
     virtual bool removeChannel(ChannelPtr channel) = 0;
 
-public:
     /**
      * @brief  判断channel是否存在
      * @return 判断结果

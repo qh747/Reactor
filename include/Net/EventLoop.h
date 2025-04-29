@@ -18,9 +18,9 @@ public:
     using ChannelPtr = std::shared_ptr<Channel>;
 
 public:
-    void updateChannel(ChannelPtr channel);
+    bool updateChannel(ChannelPtr channel);
 
-    void removeChannel(ChannelPtr channel);
+    bool removeChannel(ChannelPtr channel);
 };
 
 }; // namespace Net

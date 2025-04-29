@@ -2,10 +2,12 @@
 
 namespace Net {
 
-void EventLoop::updateChannel(ChannelPtr channel) {
+bool EventLoop::updateChannel(ChannelPtr channel) {
+    return true;
 }
 
-void EventLoop::removeChannel(ChannelPtr channel) {
+bool EventLoop::removeChannel(ChannelPtr channel) {
+    return true;
 }
 
 } // namespace Net

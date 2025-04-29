@@ -65,16 +65,22 @@ public:
     static const char* GetFileName(const char* path);
 
     /**
-     * @brief 获取事件类型字符串
+     * @brief  获取事件类型字符串
      * @return 事件类型字符串
      */
     static std::string EventTypeToString(Event_t event);
 
     /**
-     * @brief 获取状态类型字符串
+     * @brief  获取状态类型字符串
      * @return 状态类型字符串
      */
     static std::string StateTypeToString(State_t state);
+
+    /**
+     * @brief  获取epoll控制类型字符串
+     * @return epoll控制类型字符串
+     */
+    static std::string EpollCtrlTypeToString(EpCtrl_t type);
 };
 
 /**

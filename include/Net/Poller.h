@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <memory>
-#include "Common/Typedef.h"
+#include "Common/TypeDef.h"
 #include "Utils/Utils.h"
 using namespace Common;
 using namespace Utils;
@@ -17,7 +17,7 @@ public:
     using WkPtr = std::weak_ptr<Poller>;
 
 public:
-    Poller(EventLoopPtr loop, const std::string& id);
+    Poller(EventLoopWkPtr loop, const std::string& id);
     virtual ~Poller() = default;
 
 public:
@@ -28,7 +28,7 @@ public:
      * @param  activeChannels 事件触发的channel
      * @param  errCode 错误码
      */
-    virtual Timestamp wait(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) = 0;
+    virtual Timestamp poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) = 0;
 
     /**
      * @brief  更新channel
@@ -60,12 +60,20 @@ public:
         return m_id;
     }
 
+    /** 
+     * @brief  获取poller所属的事件循环
+     * @return poller所属的事件循环
+     */
+    inline EventLoopWkPtr getOwnerLoop() const {
+        return m_ownerLoop;
+    }
+
 protected:
     // poller id
     const std::string m_id;
 
-    // poller所属的事件循环
-    EventLoopPtr m_ownerLoop;
+    // poller所属的事件循环弱引用
+    EventLoopWkPtr m_ownerLoop;
 
     // poller管理的channel map
     ChannelMap m_channelMap;

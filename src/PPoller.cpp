@@ -8,7 +8,7 @@ using namespace Utils;
 
 namespace Net {
 
-Timestamp PPoller::wait(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
+Timestamp PPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
     // 填充事件列表
     m_pollEventList.resize(m_channelMap.size());
     for (const auto& pair : m_channelMap) {
@@ -25,25 +25,25 @@ Timestamp PPoller::wait(int timeoutMs, ChannelWrapperList& activeChannels, int& 
     }
 
     // 等待事件发生
-    int activeEventSize = poll(m_pollEventList.data(), m_pollEventList.size() + 1, timeoutMs);
+    int activeEventSize = ::poll(m_pollEventList.data(), m_pollEventList.size() + 1, timeoutMs);
     auto now = std::chrono::system_clock::now();
 
     if (activeEventSize < 0) {
         if (errno == EINTR) {
             // 外部中断
             errCode = EINTR;
-            LOG_WARN << "Poll wait warning. external interrupt. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno); 
+            LOG_WARN << "Poll poll warning. external interrupt. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno); 
         }
         else {
             // poll()出错
             errCode = errno;
-            LOG_FATAL << "Poll wait error. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
+            LOG_FATAL << "Poll poll error. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
         }
     }
     else if (0 == activeEventSize) {
         // poll()超时
         errCode = ETIMEDOUT;
-        LOG_WARN << "Poll wait warning. timeout. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
+        LOG_WARN << "Poll poll warning. timeout. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
     }
     else {
         // 处理活跃的channel
@@ -51,15 +51,15 @@ Timestamp PPoller::wait(int timeoutMs, ChannelWrapperList& activeChannels, int& 
             const auto& event = m_pollEventList[idx];
             const auto& channelMapIter = m_channelMap.find(event.fd);
             if (m_channelMap.end() == channelMapIter) {
-                LOG_ERROR << "Poll wait error. channel not found. id: " << m_id << " fd: " << event.fd << ".";
+                LOG_ERROR << "Poll poll error. channel not found. id: " << m_id << " fd: " << event.fd << ".";
                 continue;
             }
 
             // 添加活跃的channel
             Event_t evType = static_cast<Event_t>(event.events);
-            activeChannels.emplace_back(std::make_shared<ChannelWrapper_dt>(evType, channelMapIter->second));
+            activeChannels.emplace_back(std::make_shared<ChannelWrapper>(channelMapIter->second, evType));
 
-            LOG_DEBUG << "Poll wait success. id: " << m_id << " fd: " << event.fd << " event type: " 
+            LOG_DEBUG << "Poll poll success. id: " << m_id << " fd: " << event.fd << " event type: " 
                       << StringHelper::EventTypeToString(evType) << ".";
         }
     }

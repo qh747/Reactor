@@ -1,11 +1,13 @@
 #include "Utils/Logger.h"
+#include "Net/EventLoop.h"
+#include "Net/Poller.h"
 #include "Net/PPoller.h"
 #include "Net/EpPoller.h"
 #include "Factory/PollerFactory.h"
 
 namespace Factory {
 
-Poller::Ptr PollerFactory::CreatePoller(Poller_t type, EventLoopPtr loop, const std::string& id) {
+Poller::Ptr PollerFactory::CreatePoller(Poller_t type, EventLoop::WkPtr loop, const std::string& id) {
     if (Poller_t::PollerPoll == type) {
         return std::make_shared<PPoller>(loop, id);
     }

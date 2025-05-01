@@ -1,8 +1,9 @@
 #include <mutex>
 #include <unordered_set>
-#include "Net/Channel.h"
-#include "Net/Poller.h"
 #include "Utils/Logger.h"
+#include "Net/Channel.h"
+#include "Net/EventLoop.h"
+#include "Net/Poller.h"
 
 namespace Net {
 
@@ -10,7 +11,7 @@ namespace Net {
 static std::mutex PollerIdSetMutex;
 static std::unordered_set<std::string> PollerIdSet;
 
-Poller::Poller(EventLoopPtr loop, const std::string& id) : m_ownerLoop(loop), m_id(id) {
+Poller::Poller(EventLoop::WkPtr loop, const std::string& id) : m_ownerLoop(loop), m_id(id) {
     std::lock_guard<std::mutex> lock(PollerIdSetMutex);
 
     if (PollerIdSet.end() != PollerIdSet.find(id)) {

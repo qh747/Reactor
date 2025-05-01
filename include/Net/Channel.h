@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <functional>
-#include "Common/Typedef.h"
+#include "Common/TypeDef.h"
 #include "Common/DataDef.h"
 #include "Utils/Utils.h"
 using namespace Common;
@@ -29,7 +29,7 @@ public:
     using EventCbMap = std::unordered_map<Common::Event_t, EventCb>;
 
 public:
-    Channel(EventLoopPtr loop, int fd);
+    Channel(EventLoopWkPtr loop, int fd);
     ~Channel();
 
 public:
@@ -38,7 +38,7 @@ public:
      * @return 开启结果
      * @param  type 监听的事件类型
      */
-    bool start(Event_t type);
+    bool open(Event_t type);
 
     /**
      * @brief  更新监听事件
@@ -50,7 +50,7 @@ public:
      * @brief  关闭channel
      * @return 关闭结果
      */
-    bool shutdown();
+    bool close();
 
     /**
      * @brief  事件处理
@@ -97,8 +97,8 @@ public:
      * @brief  获取事件循环对象
      * @return 事件循环对象
      */
-    inline EventLoopPtr getOwnerLoop() const {
-        return m_ownerLoopPtr;
+    inline EventLoopWkPtr getOwnerLoop() const {
+        return m_ownerLoop;
     }
 
 private:
@@ -128,11 +128,33 @@ private:
     // 监听事件类型
     Event_t m_listenEvType{Event_t::EvTypeNone};
 
-    // 事件循环对象
-    EventLoopPtr m_ownerLoopPtr;
+    // 事件循环对象弱引用
+    EventLoopWkPtr m_ownerLoop;
 
     // 事件回调函数map
     EventCbMap m_evCbMap;
+};
+
+/**
+ * @brief Channel包装类
+ */
+class ChannelWrapper {
+public:
+    using Ptr = std::shared_ptr<ChannelWrapper>;
+    using WkPtr = std::weak_ptr<ChannelWrapper>;
+
+public:
+    ChannelWrapper(Channel::Ptr channel, Event_t activeEvType)
+        : m_channel(channel), m_activeEvType(activeEvType) {
+    }
+    ~ChannelWrapper() = default;
+
+public:
+    // 激活channel的事件类型
+    Event_t m_activeEvType;
+
+    // channel对象
+    Channel::Ptr m_channel;
 };
 
 }; // namespace Net

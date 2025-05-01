@@ -1,15 +1,16 @@
 #include <cstring>
 #include <unistd.h>
-#include <Common/ConfigDef.h>
+#include "Common/ConfigDef.h"
 #include "Utils/Logger.h"
 #include "Net/Channel.h"
+#include "Net/EventLoop.h"
 #include "Net/EpPoller.h"
 using namespace Common;
 using namespace Utils;
 
 namespace Net {
 
-EpPoller::EpPoller(EventLoopPtr loop, const std::string& id)
+EpPoller::EpPoller(EventLoop::WkPtr loop, const std::string& id)
     : Poller(loop, id),
       m_epollFd(epoll_create1(EPOLL_CLOEXEC)),
       m_epollEventList(POLL_INIT_WAIT_EVENTS_SIZE) {
@@ -23,7 +24,7 @@ EpPoller::~EpPoller() {
     close(m_epollFd);
 }
 
-Timestamp EpPoller::wait(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
+Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
     int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(), m_epollEventList.size(), timeoutMs);
     auto now = std::chrono::system_clock::now();
 
@@ -31,18 +32,18 @@ Timestamp EpPoller::wait(int timeoutMs, ChannelWrapperList& activeChannels, int&
         if (errno == EINTR) {
             // 外部中断
             errCode = EINTR;
-            LOG_WARN << "Epoll wait warning. external interrupt. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno); 
+            LOG_WARN << "Epoll poll warning. external interrupt. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno); 
         }
         else {
             // epoll_wait()出错
             errCode = errno;
-            LOG_FATAL << "Epoll wait error. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
+            LOG_FATAL << "Epoll poll error. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
         }
     }
     else if (0 == activeEventSize) {
         // epoll_wait()超时
         errCode = ETIMEDOUT;
-        LOG_WARN << "Epoll wait warning. timeout. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
+        LOG_WARN << "Epoll poll warning. timeout. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
     }
     else {
         // 处理活跃的channel
@@ -50,15 +51,15 @@ Timestamp EpPoller::wait(int timeoutMs, ChannelWrapperList& activeChannels, int&
             const auto& event = m_epollEventList[idx];
             const auto& channelMapIter = m_channelMap.find(event.data.fd);
             if (m_channelMap.end() == channelMapIter) {
-                LOG_ERROR << "Epoll wait error. channel not found. id: " << m_id << " fd: " << event.data.fd << ".";
+                LOG_ERROR << "Epoll poll error. channel not found. id: " << m_id << " fd: " << event.data.fd << ".";
                 continue;
             }
 
             // 添加活跃的channel
             Event_t evType = static_cast<Event_t>(event.events);
-            activeChannels.emplace_back(std::make_shared<ChannelWrapper_dt>(evType, channelMapIter->second));
+            activeChannels.emplace_back(std::make_shared<ChannelWrapper>(channelMapIter->second, evType));
 
-            LOG_DEBUG << "Epoll wait success. id: " << m_id << " fd: " << event.data.fd << " event type: " 
+            LOG_DEBUG << "Epoll poll success. id: " << m_id << " fd: " << event.data.fd << " event type: " 
                       << StringHelper::EventTypeToString(evType) << ".";
         }
 

@@ -1,6 +1,4 @@
 #pragma once
-#include <vector>
-#include <memory>
 #include <sys/poll.h>
 
 namespace Common {
@@ -60,26 +58,3 @@ typedef enum class PollerControlType : int {
 } PollerCtrl_t;
 
 }; // namespace Common
-
-namespace Net {
-
-/**
- * @brief channel包装类
- */
-class Channel;
-typedef struct ChannelWrapperDataType {
-    Common::Event_t evType;
-    std::shared_ptr<Channel> channel;
-
-    ChannelWrapperDataType() = default;
-    ChannelWrapperDataType(Common::Event_t evType, std::shared_ptr<Channel> channel)
-        : evType(evType), channel(channel) {
-    }
-
-} ChannelWrapper_dt;
-
-// Channel包装类
-using ChannelWrapperPtr = std::shared_ptr<ChannelWrapper_dt>;
-using ChannelWrapperList = std::vector<ChannelWrapperPtr>;
-
-}; // namespace Net

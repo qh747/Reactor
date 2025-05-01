@@ -14,7 +14,7 @@ public:
     using WkPtr = std::weak_ptr<PPoller>;
 
 public:
-    PPoller(EventLoopPtr loop, const std::string& id) : Poller(loop, id) {}
+    PPoller(EventLoopWkPtr loop, const std::string& id) : Poller(loop, id) {}
     ~PPoller() override = default;
 
 public:
@@ -25,7 +25,7 @@ public:
      * @param  activeChannels 事件触发的channel
      * @param  errCode 错误码
      */
-    Timestamp wait(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) override;
+    Timestamp poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) override;
 
     /**
      * @brief  更新channel

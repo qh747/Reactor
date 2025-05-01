@@ -35,8 +35,8 @@ const static int EvWriteTypeCmp = static_cast<int>(Event_t::EvTypeWrite);
 const static int EvCloseTypeCmp = static_cast<int>(Event_t::EvTypeClose);
 const static int EvErrorTypeCmp = static_cast<int>(Event_t::EvTypeError);
 
-Channel::Channel(EventLoopPtr loop, int fd)
-    : m_ownerLoopPtr(loop),
+Channel::Channel(EventLoop::WkPtr loop, int fd)
+    : m_ownerLoop(loop),
       m_fd(fd) {
 
     LOG_DEBUG << "Channel construct. fd: " << m_fd;
@@ -44,23 +44,23 @@ Channel::Channel(EventLoopPtr loop, int fd)
 
 Channel::~Channel() {
     if (State_t::StatePending != m_state) {
-        this->shutdown();
+        this->close();
     }
 
     LOG_DEBUG << "Channel deconstruct. fd: " << m_fd;
 }
 
-bool Channel::start(Event_t type) {
+bool Channel::open(Event_t type) {
     // 事件类型校验
     if (ValidEvents.end() == ValidEvents.find(type)) {
-        LOG_ERROR << "Channel start error. invalid event type. fd: " << m_fd << " event type: " 
+        LOG_ERROR << "Channel open error. invalid event type. fd: " << m_fd << " event type: " 
                   << StringHelper::EventTypeToString(type);
         return false;
     }
 
     // channel已启动
     if (State_t::StatePending != m_state) {
-        LOG_WARN << "Channel start warning. start already. fd: " << m_fd;
+        LOG_WARN << "Channel open warning. open already. fd: " << m_fd;
         return true;
     }
 
@@ -68,7 +68,7 @@ bool Channel::start(Event_t type) {
     m_listenEvType = type;
 
     // 在事件循环中更新channel
-    return m_ownerLoopPtr->updateChannel(this->shared_from_this());
+    return m_ownerLoop.lock()->updateChannel(this->shared_from_this());
 }
 
 bool Channel::update(Event_t type) {
@@ -81,7 +81,7 @@ bool Channel::update(Event_t type) {
 
     // channel是否已启动
     if (State_t::StatePending == m_state) {
-        LOG_ERROR << "Channel update error. not started. fd: " << m_fd;
+        LOG_ERROR << "Channel update error. not opened. fd: " << m_fd;
         return false;
     }
 
@@ -89,13 +89,13 @@ bool Channel::update(Event_t type) {
     m_listenEvType = type;
 
     // 在事件循环中更新channel
-    return m_ownerLoopPtr->updateChannel(this->shared_from_this());
+    return m_ownerLoop.lock()->updateChannel(this->shared_from_this());
 }
 
-bool Channel::shutdown() {
+bool Channel::close() {
     // channel未启动
     if (State_t::StatePending == m_state) {
-        LOG_WARN << "Channel shutdown warning. shutdown already. fd: " << m_fd;
+        LOG_WARN << "Channel close warning. closed already. fd: " << m_fd;
         return true;
     }
 
@@ -103,7 +103,7 @@ bool Channel::shutdown() {
     m_listenEvType = Event_t::EvTypeNone;
 
     // 在事件循环中移除channel
-    return m_ownerLoopPtr->removeChannel(this->shared_from_this());
+    return m_ownerLoop.lock()->removeChannel(this->shared_from_this());
 }
 
 bool Channel::handleEvent(Event_t type, Timestamp recvTime) {

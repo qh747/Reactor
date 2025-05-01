@@ -1,7 +1,7 @@
 #pragma once
-#include "Common/DataDef.h"
+#include "Common/TypeDef.h"
 #include "Utils/Utils.h"
-#include "Net/Poller.h"
+
 using namespace Common;
 using namespace Utils;
 using namespace Net;
@@ -20,7 +20,7 @@ public:
      * @param  loop EventLoop指针
      * @param  id Poller id
      */
-    static Poller::Ptr CreatePoller(Poller_t type, EventLoopPtr loop, const std::string& id);
+    static PollerPtr CreatePoller(Poller_t type, EventLoopWkPtr loop, const std::string& id);
 };
 
 }; // namespace Factory

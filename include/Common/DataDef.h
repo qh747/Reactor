@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include <memory>
 #include <sys/poll.h>
 
@@ -76,5 +77,9 @@ typedef struct ChannelWrapperDataType {
     }
 
 } ChannelWrapper_dt;
+
+// Channel包装类
+using ChannelWrapperPtr = std::shared_ptr<ChannelWrapper_dt>;
+using ChannelWrapperList = std::vector<ChannelWrapperPtr>;
 
 }; // namespace Net

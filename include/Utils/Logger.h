@@ -65,9 +65,9 @@ public:
 
 public:
     /**
-     * @brief 支持各种类型的输入
-     * @param value 输入值
+     * @brief  支持各种类型的输入
      * @return 日志流式代理类
+     * @param  value 输入值
      */
     template <typename T>
     Logger& operator<<(const T& value) {
@@ -76,9 +76,9 @@ public:
     }
 
     /**
-     * @brief 支持 std::endl 等流操作符
-     * @param manip 输入值
+     * @brief  支持 std::endl 等流操作符
      * @return 日志流式代理类
+     * @param  manip 输入值
      */
     Logger& operator<<(std::ostream& (*manip)(std::ostream&)) {
         manip(m_buffer);

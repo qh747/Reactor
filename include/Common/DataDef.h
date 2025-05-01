@@ -1,12 +1,8 @@
 #pragma once
 #include <memory>
-#include <cstddef>
-#include <poll.h>
+#include <sys/poll.h>
 
 namespace Common {
-
-// I/O多路复用初始监听事件储量
-const std::size_t POLL_INIT_WAIT_EVENTS_SIZE = 16;
 
 /**
  * @brief 事件类型
@@ -53,13 +49,14 @@ typedef enum class PollerType : int {
 } Poller_t;
 
 /**
- * @brief epoll控制类型
+ * @note  类型值分别与EPOLL_CTRL_ADD、EPOLL_CTL_MOD、EPOLL_CTL_DEL对应
+ * @brief Poller控制类型
  */
-typedef enum class EpollControlType : int {
-    EpollAdd = 1,
-    EpollModify = 2,
-    EpollRemove = 3,
-} EpCtrl_t;
+typedef enum class PollerControlType : int {
+    PollerAdd = 1,
+    PollerModify = 2,
+    PollerRemove = 3,
+} PollerCtrl_t;
 
 }; // namespace Common
 
@@ -72,6 +69,11 @@ class Channel;
 typedef struct ChannelWrapperDataType {
     Common::Event_t evType;
     std::shared_ptr<Channel> channel;
+
+    ChannelWrapperDataType() = default;
+    ChannelWrapperDataType(Common::Event_t evType, std::shared_ptr<Channel> channel)
+        : evType(evType), channel(channel) {
+    }
 
 } ChannelWrapper_dt;
 

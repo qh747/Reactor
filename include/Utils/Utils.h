@@ -78,10 +78,10 @@ public:
     static std::string StateTypeToString(State_t state);
 
     /**
-     * @brief  获取epoll控制类型字符串
-     * @return epoll控制类型字符串
+     * @brief  获取poller控制类型字符串
+     * @return poller控制类型字符串
      */
-    static std::string EpollCtrlTypeToString(EpCtrl_t type);
+    static std::string PollerCtrlTypeToString(PollerCtrl_t type);
 };
 
 /**

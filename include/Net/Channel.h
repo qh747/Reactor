@@ -15,6 +15,7 @@ namespace Net {
 class Channel : public Noncopyable, public std::enable_shared_from_this<Channel> {
 public:
     // 允许以下友元类修改channel状态
+    friend class PPoller;
     friend class EpPoller;
 
 public:
@@ -29,7 +30,7 @@ public:
     /**
      * @brief  开启channel
      * @return 开启结果
-     * @param type 监听的事件类型
+     * @param  type 监听的事件类型
      */
     bool start(Event_t type);
 
@@ -48,16 +49,16 @@ public:
     /**
      * @brief  事件处理
      * @return 处理结果
-     * @param type 发生事件类型
-     * @param recvTime 发生事件时间
+     * @param  type 发生事件类型
+     * @param  recvTime 发生事件时间
      */
     bool handleEvent(Event_t type, Timestamp recvTime);
 
     /**
      * @brief  设置事件回调函数
      * @return 设置结果
-     * @param type 事件类型
-     * @param cb 回调函数
+     * @param  type 事件类型
+     * @param  cb 回调函数
      */
     bool setEventCb(Event_t type, EventCb cb);
 
@@ -87,7 +88,7 @@ public:
     }
 
     /**
-     * @brief 获取事件循环对象
+     * @brief  获取事件循环对象
      * @return 事件循环对象
      */
     inline EventLoopPtr getOwnerLoop() const {
@@ -106,8 +107,8 @@ private:
     /**
      * @brief  无需校验的事件处理
      * @return 处理结果
-     * @param type 发生事件类型
-     * @param recvTime 发生事件时间
+     * @param  type 发生事件类型
+     * @param  recvTime 发生事件时间
      */
     bool handleEventWithoutCheck(Event_t type, Timestamp recvTime);
 

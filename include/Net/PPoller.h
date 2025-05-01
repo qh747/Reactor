@@ -1,21 +1,21 @@
 #pragma once
 #include <vector>
-#include <sys/epoll.h>
+#include <sys/poll.h>
 #include "Net/Poller.h"
 
 namespace Net {
 
 /**
- * @brief I/O复用 epoll封装类
+ * @brief I/O复用 poll封装类
  */
-class EpPoller : public Poller {
+class PPoller : public Poller {
 public:
-    using Ptr = std::shared_ptr<EpPoller>;
-    using WkPtr = std::weak_ptr<EpPoller>;
+    using Ptr = std::shared_ptr<PPoller>;
+    using WkPtr = std::weak_ptr<PPoller>;
 
 public:
-    EpPoller(EventLoopPtr loop, const std::string& id);
-    ~EpPoller() override;
+    PPoller(EventLoopPtr loop, const std::string& id) : Poller(loop, id) {}
+    ~PPoller() override = default;
 
 public:
     /**
@@ -42,21 +42,8 @@ public:
     bool removeChannel(ChannelPtr channel) override;
 
 private:
-    /**
-     * @brief  操作epoll
-     * @return 操作结果
-     * @param  fd 操作的fd
-     * @param  ev 操作的事件
-     * @param  op 操作类型
-     */
-    bool operateControl(int fd, Event_t ev, PollerCtrl_t op);
-
-private:
-    // epoll fd
-    int m_epollFd;
-
     // 监听事件列表
-    std::vector<epoll_event> m_epollEventList;
+    std::vector<pollfd> m_pollEventList;
 };
 
 }; // namespace Net

@@ -82,11 +82,11 @@ std::string StringHelper::StateTypeToString(State_t state) {
     return "StateType(" + std::to_string(static_cast<int>(state)) + ")";
 }
 
-std::string StringHelper::EpollCtrlTypeToString(EpCtrl_t type) {
-    static const std::unordered_map<EpCtrl_t, std::string> EpollCtrlTypeStrings = {
-        {EpCtrl_t::EpollAdd, "EpollAdd"},
-        {EpCtrl_t::EpollModify, "EpollModify"},
-        {EpCtrl_t::EpollRemove, "EpollRemove"}};
+std::string StringHelper::PollerCtrlTypeToString(PollerCtrl_t type) {
+    static const std::unordered_map<PollerCtrl_t, std::string> EpollCtrlTypeStrings = {
+        {PollerCtrl_t::PollerAdd, "Add"},
+        {PollerCtrl_t::PollerModify, "Modify"},
+        {PollerCtrl_t::PollerRemove, "Remove"}};
 
     auto it = EpollCtrlTypeStrings.find(type);
     if (it != EpollCtrlTypeStrings.end()) {

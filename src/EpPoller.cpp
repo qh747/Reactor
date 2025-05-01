@@ -1,5 +1,6 @@
 #include <cstring>
 #include <unistd.h>
+#include <Common/ConfigDef.h>
 #include "Utils/Logger.h"
 #include "Net/Channel.h"
 #include "Net/EpPoller.h"
@@ -8,13 +9,13 @@ using namespace Utils;
 
 namespace Net {
 
-EpPoller::EpPoller(EventLoopPtr loop)
-    : Poller(loop),
+EpPoller::EpPoller(EventLoopPtr loop, const std::string& id)
+    : Poller(loop, id),
       m_epollFd(epoll_create1(EPOLL_CLOEXEC)),
       m_epollEventList(POLL_INIT_WAIT_EVENTS_SIZE) {
     // 创建失败，程序退出
     if (m_epollFd < 0) {
-        LOG_FATAL << "Construct epoll poller error. code: " << errno << ". msg: " << strerror(errno);
+        LOG_FATAL << "Construct epoll poller error. id: " << id << " code: " << errno << ". msg: " << strerror(errno);
     }
 }
 
@@ -22,14 +23,57 @@ EpPoller::~EpPoller() {
     close(m_epollFd);
 }
 
-Timestamp EpPoller::wait(int timeoutMs, ChannelWrapperList& activeChannels) {
+Timestamp EpPoller::wait(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
+    int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(), m_epollEventList.size(), timeoutMs);
+    auto now = std::chrono::system_clock::now();
 
-    return std::chrono::system_clock::now();
+    if (activeEventSize < 0) {
+        if (errno == EINTR) {
+            // 外部中断
+            errCode = EINTR;
+            LOG_WARN << "Epoll wait warning. external interrupt. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno); 
+        }
+        else {
+            // epoll_wait()出错
+            errCode = errno;
+            LOG_FATAL << "Epoll wait error. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
+        }
+    }
+    else if (0 == activeEventSize) {
+        // epoll_wait()超时
+        errCode = ETIMEDOUT;
+        LOG_WARN << "Epoll wait warning. timeout. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
+    }
+    else {
+        // 处理活跃的channel
+        for (int idx = 0; idx < activeEventSize; ++idx) {
+            const auto& event = m_epollEventList[idx];
+            const auto& channelMapIter = m_channelMap.find(event.data.fd);
+            if (m_channelMap.end() == channelMapIter) {
+                LOG_ERROR << "Epoll wait error. channel not found. id: " << m_id << " fd: " << event.data.fd << ".";
+                continue;
+            }
+
+            // 添加活跃的channel
+            Event_t evType = static_cast<Event_t>(event.events);
+            activeChannels.emplace_back(std::make_shared<ChannelWrapper_dt>(evType, channelMapIter->second));
+
+            LOG_DEBUG << "Epoll wait success. id: " << m_id << " fd: " << event.data.fd << " event type: " 
+                      << StringHelper::EventTypeToString(evType) << ".";
+        }
+
+        // 判断是否需要对epoll event列表扩容
+        if (activeEventSize == m_epollEventList.size()) {
+            m_epollEventList.resize(m_epollEventList.size() * 2);
+        }
+    }
+
+    return now;
 }
 
 bool EpPoller::updateChannel(Channel::Ptr channel) {
     if (nullptr == channel) {
-        LOG_ERROR << "Update channel error. channel invalid. epoll fd: " << m_epollFd << ".";
+        LOG_ERROR << "Update channel error. channel invalid. id: " << m_id << ".";
         return false;
     }
 
@@ -49,7 +93,7 @@ bool EpPoller::updateChannel(Channel::Ptr channel) {
         channel->setState(state);
 
         // epoll更新
-        this->operateControl(fd, evType, EpCtrl_t::EpollAdd);
+        this->operateControl(fd, evType, PollerCtrl_t::PollerAdd);
     }
     else if (State_t::StateInLoop == state) {
         if (Event_t::EvTypeNone == evType) {
@@ -58,27 +102,27 @@ bool EpPoller::updateChannel(Channel::Ptr channel) {
             channel->setState(state);
 
             // epoll更新
-            this->operateControl(fd, evType, EpCtrl_t::EpollRemove);
+            this->operateControl(fd, evType, PollerCtrl_t::PollerRemove);
         }
         else {
-            this->operateControl(fd, evType, EpCtrl_t::EpollModify);
+            this->operateControl(fd, evType, PollerCtrl_t::PollerModify);
         }
     }
     else {
-        LOG_ERROR << "Update channel error. channel state invalid. epoll fd: " << m_epollFd << " fd: " << fd 
+        LOG_ERROR << "Update channel error. channel state invalid. id: " << m_id << " fd: " << fd 
                   << " state: " << StringHelper::StateTypeToString(state) 
                   << " event type: " << StringHelper::EventTypeToString(evType) << ".";
         return false;
     }
 
-    LOG_INFO << "Update channel success. epoll fd: " << m_epollFd << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
+    LOG_INFO << "Update channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
              << " event type: " << StringHelper::EventTypeToString(evType) << ".";
     return true;
 }
 
 bool EpPoller::removeChannel(Channel::Ptr channel) {
     if (nullptr == channel) {
-        LOG_ERROR << "Remove channel error. channel invalid. epoll fd: " << m_epollFd << ".";
+        LOG_ERROR << "Remove channel error. channel invalid. id: " << m_id << ".";
         return false;
     }
 
@@ -89,7 +133,7 @@ bool EpPoller::removeChannel(Channel::Ptr channel) {
     // epoll移除
     int fd = channel->getFd();
     Event_t evType = channel->getEvType();
-    bool result = this->operateControl(fd, evType, EpCtrl_t::EpollRemove);
+    bool result = this->operateControl(fd, evType, PollerCtrl_t::PollerRemove);
 
     // 移除channel
     if(m_channelMap.end() != m_channelMap.find(fd)) {
@@ -97,17 +141,17 @@ bool EpPoller::removeChannel(Channel::Ptr channel) {
     }
 
     if (!result) {
-        LOG_ERROR << "Remove channel error. epoll fd: " << m_epollFd << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
+        LOG_ERROR << "Remove channel error. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
                   << " event type: " << StringHelper::EventTypeToString(evType) << ".";
         return false;
     }
 
-    LOG_INFO << "Remove channel success. epoll fd: " << m_epollFd << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
+    LOG_INFO << "Remove channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
              << " event type: " << StringHelper::EventTypeToString(evType) << ".";
     return true;
 }
 
-bool EpPoller::operateControl(int fd, Event_t ev, EpCtrl_t op) {
+bool EpPoller::operateControl(int fd, Event_t ev, PollerCtrl_t op) {
     epoll_event event;
     memset(&event, 0, sizeof(event));
 
@@ -115,22 +159,19 @@ bool EpPoller::operateControl(int fd, Event_t ev, EpCtrl_t op) {
     event.events = static_cast<int>(ev);
 
     if (epoll_ctl(m_epollFd, static_cast<int>(op), fd, &event) < 0) {
-        if (EpCtrl_t::EpollRemove == op) {
-            LOG_ERROR << "Epoll ctrl error. epoll fd: " << m_epollFd << " fd: " << fd
-                      << " op: " << StringHelper::EpollCtrlTypeToString(op)
+        if (PollerCtrl_t::PollerRemove == op) {
+            LOG_ERROR << "Epoll ctrl error. id: " << m_id << " fd: " << fd << " op: " << StringHelper::PollerCtrlTypeToString(op)
                       << " event type: " << StringHelper::EventTypeToString(ev) << ".";
         }
         else {
-            LOG_FATAL << "Epoll ctrl error. epoll fd: " << m_epollFd << " fd: " << fd
-                      << " op: " << StringHelper::EpollCtrlTypeToString(op)
+            LOG_FATAL << "Epoll ctrl error. id: " << m_id << " fd: " << fd << " op: " << StringHelper::PollerCtrlTypeToString(op)
                       << " event type: " << StringHelper::EventTypeToString(ev) << ".";
         }
 
         return false;
     }
     else {
-        LOG_INFO << "Epoll ctrl success. epoll fd: " << m_epollFd << " fd: " << fd
-                 << " op: " << StringHelper::EpollCtrlTypeToString(op)
+        LOG_INFO << "Epoll ctrl success. id: " << m_id << " fd: " << fd << " op: " << StringHelper::PollerCtrlTypeToString(op)
                  << " event type: " << StringHelper::EventTypeToString(ev) << ".";
         return true;
     }

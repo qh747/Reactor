@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
-#include "Common/Utils.h"
-using namespace Common;
+#include "Utils/Utils.h"
+using namespace Utils;
 
 namespace Net {
 

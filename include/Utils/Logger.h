@@ -4,9 +4,9 @@
 #include <sstream>
 #include <functional>
 #include <unordered_map>
-#include "Common/Utils.h"
+#include "Utils/Utils.h"
 
-namespace Common {
+namespace Utils {
 
 // 日志宏定义
 #define LOG(level) Logger(level, StringHelper::GetFileName(__FILE__), __LINE__)
@@ -118,4 +118,4 @@ private:
     static LogPrintMap LogPrintCbMap;
 };
 
-}; // namespace Common
+}; // namespace Utils

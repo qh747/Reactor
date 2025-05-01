@@ -1,9 +1,9 @@
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
-#include "Common/Logger.h"
+#include "Utils/Logger.h"
 
-namespace Common {
+namespace Utils {
 
 #define CURRANT_TIME TimeHelper::GetCurrentTime()
 
@@ -147,4 +147,4 @@ void Logger::flush() {
     }
 }
 
-} // namespace Common
+} // namespace Utils

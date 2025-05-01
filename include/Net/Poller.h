@@ -1,10 +1,9 @@
 #pragma once
-#include <chrono>
 #include <memory>
-#include <vector>
-#include <unordered_map>
-#include "Common/Utils.h"
+#include "Common/Typedef.h"
+#include "Utils/Utils.h"
 using namespace Common;
+using namespace Utils;
 
 namespace Net {
 
@@ -18,13 +17,7 @@ class EventLoop;
 class Poller : public Noncopyable, public std::enable_shared_from_this<Poller> {
 public:
     using Ptr = std::shared_ptr<Poller>;
-    using ChannelPtr = std::shared_ptr<Channel>;
-    using EventLoopPtr = std::shared_ptr<EventLoop>;
-    using Timestamp = std::chrono::system_clock::time_point;
-
-    using ChannelList = std::vector<ChannelPtr>;
-    // key = fd, value = channel pointer
-    using ChannelMap = std::unordered_map<int, ChannelPtr>;
+    using WkPtr = std::weak_ptr<Poller>;
 
 public:
     Poller(EventLoopPtr loop);
@@ -37,7 +30,7 @@ public:
      * @param timeoutMs 等待时间
      * @param activeChannels 事件触发的channel
      */
-    virtual Timestamp wait(int timeoutMs, ChannelList& activeChannels) = 0;
+    virtual Timestamp wait(int timeoutMs, ChannelWrapperList& activeChannels) = 0;
 
     /**
      * @brief  更新channel

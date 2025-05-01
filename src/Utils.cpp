@@ -3,9 +3,9 @@
 #include <sstream>
 #include <unordered_map>
 #include <sys/stat.h>
-#include "Common/Utils.h"
+#include "Utils/Utils.h"
 
-namespace Common {
+namespace Utils {
 
 std::string TimeHelper::GetCurrentTime() {
     auto now = std::chrono::system_clock::now();
@@ -122,4 +122,4 @@ bool DirHelper::CreateDirectory(const std::string& path) {
     return true;
 }
 
-} // namespace Common
+} // namespace Utils

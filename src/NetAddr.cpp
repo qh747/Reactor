@@ -2,9 +2,9 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <arpa/inet.h>
-#include "Common/Logger.h"
+#include "Utils/Logger.h"
 #include "Net/NetAddr.h"
-using namespace Common;
+using namespace Utils;
 
 namespace Net {
 

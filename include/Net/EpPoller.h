@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include <sys/epoll.h>
 #include "Net/Poller.h"
 
@@ -8,6 +9,10 @@ namespace Net {
  * @brief I/O复用 epoll封装类
  */
 class EpPoller : public Poller {
+public:
+    using Ptr = std::shared_ptr<EpPoller>;
+    using WkPtr = std::weak_ptr<EpPoller>;
+
 public:
     EpPoller(EventLoopPtr loop);
     ~EpPoller() override;
@@ -19,7 +24,7 @@ public:
      * @param timeoutMs 等待时间
      * @param activeChannels 事件触发的channel
      */
-    Timestamp wait(int timeoutMs, ChannelList& activeChannels) override;
+    Timestamp wait(int timeoutMs, ChannelWrapperList& activeChannels) override;
 
     /**
      * @brief  更新channel
@@ -49,8 +54,8 @@ private:
     // epoll fd
     int m_epollFd;
 
-    // 监听事件数量
-    std::size_t m_waitEventsSize;
+    // 监听事件列表
+    std::vector<epoll_event> m_epollEventList;
 };
 
 }; // namespace Net

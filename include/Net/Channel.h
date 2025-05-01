@@ -1,17 +1,12 @@
 #pragma once
 #include <memory>
-#include <chrono>
-#include <functional>
-#include <unordered_map>
+#include "Common/Typedef.h"
 #include "Common/DataDef.h"
-#include "Common/Utils.h"
+#include "Utils/Utils.h"
 using namespace Common;
+using namespace Utils;
 
 namespace Net {
-
-// 前置声明
-class EpPoller;
-class EventLoop;
 
 /**
  * @note Channel不允许拷贝，但允许通过指针形式传递
@@ -24,10 +19,7 @@ public:
 
 public:
     using Ptr = std::shared_ptr<Channel>;
-    using EventLoopPtr = std::shared_ptr<EventLoop>;
-    using Timestamp = std::chrono::system_clock::time_point;
-    using EventCb = std::function<void(Timestamp)>;
-    using EventCbMap = std::unordered_map<Event_t, EventCb>;
+    using WkPtr = std::weak_ptr<Channel>;
 
 public:
     Channel(EventLoopPtr loop, int fd);

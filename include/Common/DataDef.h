@@ -1,11 +1,12 @@
 #pragma once
+#include <memory>
 #include <cstddef>
 #include <poll.h>
 
 namespace Common {
 
-// epoll初始监听事件储量
-const std::size_t EPOLL_INIT_WAIT_EVENTS_SIZE = 16;
+// I/O多路复用初始监听事件储量
+const std::size_t POLL_INIT_WAIT_EVENTS_SIZE = 16;
 
 /**
  * @brief 事件类型
@@ -61,3 +62,17 @@ typedef enum class EpollControlType : int {
 } EpCtrl_t;
 
 }; // namespace Common
+
+namespace Net {
+
+/**
+ * @brief channel包装类
+ */
+class Channel;
+typedef struct ChannelWrapperDataType {
+    Common::Event_t evType;
+    std::shared_ptr<Channel> channel;
+
+} ChannelWrapper_dt;
+
+}; // namespace Net

@@ -1,8 +1,9 @@
 #pragma once
 #include <string>
 #include "Common/DataDef.h"
+using namespace Common;
 
-namespace Common {
+namespace Utils {
 
 /**
  * @brief 禁止构造基类
@@ -110,4 +111,4 @@ public:
     static bool CreateDirectory(const std::string& path);
 };
 
-}; // namespace Common
+}; // namespace Utils

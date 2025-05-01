@@ -1,7 +1,7 @@
 #include <thread>
 #include <iostream>
-#include <Common/Logger.h>
-using namespace Common;
+#include <Utils/Logger.h>
+using namespace Utils;
 
 void FuncTestFst() {
     std::cout << "LOG TEST FIRST -----------------------------" << std::endl;

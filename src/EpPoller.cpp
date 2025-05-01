@@ -1,16 +1,17 @@
 #include <cstring>
 #include <unistd.h>
-#include "Common/Logger.h"
+#include "Utils/Logger.h"
 #include "Net/Channel.h"
 #include "Net/EpPoller.h"
 using namespace Common;
+using namespace Utils;
 
 namespace Net {
 
 EpPoller::EpPoller(EventLoopPtr loop)
     : Poller(loop),
       m_epollFd(epoll_create1(EPOLL_CLOEXEC)),
-      m_waitEventsSize(EPOLL_INIT_WAIT_EVENTS_SIZE) {
+      m_epollEventList(POLL_INIT_WAIT_EVENTS_SIZE) {
     // 创建失败，程序退出
     if (m_epollFd < 0) {
         LOG_FATAL << "Construct epoll poller error. code: " << errno << ". msg: " << strerror(errno);
@@ -21,12 +22,12 @@ EpPoller::~EpPoller() {
     close(m_epollFd);
 }
 
-Poller::Timestamp EpPoller::wait(int timeoutMs, ChannelList& activeChannels) {
+Timestamp EpPoller::wait(int timeoutMs, ChannelWrapperList& activeChannels) {
 
     return std::chrono::system_clock::now();
 }
 
-bool EpPoller::updateChannel(ChannelPtr channel) {
+bool EpPoller::updateChannel(Channel::Ptr channel) {
     if (nullptr == channel) {
         LOG_ERROR << "Update channel error. channel invalid. epoll fd: " << m_epollFd << ".";
         return false;
@@ -75,7 +76,7 @@ bool EpPoller::updateChannel(ChannelPtr channel) {
     return true;
 }
 
-bool EpPoller::removeChannel(ChannelPtr channel) {
+bool EpPoller::removeChannel(Channel::Ptr channel) {
     if (nullptr == channel) {
         LOG_ERROR << "Remove channel error. channel invalid. epoll fd: " << m_epollFd << ".";
         return false;

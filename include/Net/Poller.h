@@ -9,6 +9,7 @@ using namespace Utils;
 namespace Net {
 
 /**
+ * @note  使用PollerFactory::CreatePoller()函数创建Poller对象
  * @brief I/O多路复用基类
  */
 class Poller : public Noncopyable, public std::enable_shared_from_this<Poller> {

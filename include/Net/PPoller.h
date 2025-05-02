@@ -14,8 +14,8 @@ public:
     using WkPtr = std::weak_ptr<PPoller>;
 
 public:
-    PPoller(EventLoopWkPtr loop, const std::string& id) : Poller(loop, id) {}
-    ~PPoller() override = default;
+    PPoller(EventLoopWkPtr loop, const std::string& id);
+    ~PPoller() override;
 
 public:
     /**

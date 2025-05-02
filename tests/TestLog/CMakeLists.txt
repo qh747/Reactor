@@ -5,7 +5,7 @@ set(TEST_NAME TestLog)
 add_executable(${TEST_NAME} TestLog.cpp)
 
 # 添加依赖
-add_dependencies(${TEST_NAME} ${REACTOR_LIB_STATIC})
+add_dependencies(${TEST_NAME} ${REACTOR_LIB_SHARED})
 
 # 链接库
 target_link_directories(${TEST_NAME} PRIVATE ${REACTOR_LIBRARY_PATH})

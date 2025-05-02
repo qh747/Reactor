@@ -17,7 +17,6 @@ Poller::Poller(EventLoop::WkPtr loop, const std::string& id) : m_ownerLoop(loop)
     if (PollerIdSet.end() != PollerIdSet.find(id)) {
         LOG_FATAL << "Construct poller error. duplicate poller id. id: " << id;
     }
-
     PollerIdSet.insert(id);
 }
 

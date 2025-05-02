@@ -18,10 +18,12 @@ EpPoller::EpPoller(EventLoop::WkPtr loop, const std::string& id)
     if (m_epollFd < 0) {
         LOG_FATAL << "Construct epoll poller error. id: " << id << " code: " << errno << ". msg: " << strerror(errno);
     }
+    LOG_DEBUG << "Epoll poller construct. id: " << id;
 }
 
 EpPoller::~EpPoller() {
     close(m_epollFd);
+    LOG_DEBUG << "Epoll poller deconstruct. id: " << m_id;
 }
 
 Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {

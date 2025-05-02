@@ -38,7 +38,6 @@ const static int EvErrorTypeCmp = static_cast<int>(Event_t::EvTypeError);
 Channel::Channel(EventLoop::WkPtr loop, int fd)
     : m_ownerLoop(loop),
       m_fd(fd) {
-
     LOG_DEBUG << "Channel construct. fd: " << m_fd;
 }
 

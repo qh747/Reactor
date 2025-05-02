@@ -8,6 +8,15 @@ using namespace Utils;
 
 namespace Net {
 
+PPoller::PPoller(EventLoopWkPtr loop, const std::string& id) 
+    : Poller(loop, id) {
+    LOG_DEBUG << "Poll poller construct. id: " << id;
+}
+
+PPoller::~PPoller() {
+    LOG_DEBUG << "Poll poller destruct. id: " << m_id;
+}
+
 Timestamp PPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
     // 填充事件列表
     m_pollEventList.resize(m_channelMap.size());

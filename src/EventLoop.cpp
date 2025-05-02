@@ -1,4 +1,3 @@
-#include <mutex>
 #include <random>
 #include <cstdint>
 #include <cstring>
@@ -10,6 +9,7 @@
 #include "Utils/Logger.h"
 #include "Factory/PollerFactory.h"
 #include "Net/Channel.h"
+#include "Net/Poller.h"
 #include "Net/EventLoop.h"
 using namespace Common;
 using namespace Factory;
@@ -92,6 +92,7 @@ std::unordered_set<std::string> EventLoopIdGenerator::IdSet;
 EventLoop::EventLoop(std::thread::id threadId) 
     : m_threadId(threadId), 
       m_running(false),
+      m_waiting(false),
       m_poller(nullptr),
       m_wakeupChannel(nullptr) {
     LOG_DEBUG << "Eventloop construct. thread id: " << m_threadId;
@@ -167,6 +168,46 @@ bool EventLoop::loop() {
         return true;
     }
 
+    LOG_INFO << "Eventloop start. thread id: " << m_threadId;
+
+    // 启动事件循环
+    m_running = true;
+    while (m_running) {
+        // 事件相关参数重置
+        int errCode = 0;
+        Timestamp returnTime;
+        m_activeChannels.clear();
+
+        // 等待事件触发
+        {
+            m_waiting = true;
+            returnTime = m_poller->poll(POLLER_DEFAULT_WAIT_TIME, m_activeChannels, errCode);
+            m_waiting = false;
+
+            if (0 != errCode) {
+                if (EINTR != errCode && ETIMEDOUT != errCode) {
+                    LOG_ERROR << "Eventloop loop error. poll failed. thread id: " << m_threadId
+                              << " errno: " << errno << ", error: " << strerror(errno);
+                    return false;
+                }
+                else {
+                    continue;
+                }
+            }
+        }
+        
+        // 处理事件
+        {
+            for (const auto& channelWrapper : m_activeChannels) {
+                channelWrapper->m_channel->handleEvent(channelWrapper->m_activeEvType, returnTime);
+            }
+    
+            // 处理其他EventLoop分配给当前EventLoop的任务
+            this->handleTask();
+        }
+    }
+
+    LOG_INFO << "Eventloop stop. thread id: " << m_threadId;
     return true;
 }
 
@@ -177,19 +218,71 @@ bool EventLoop::quit() {
         return true;
     }
 
+    // 修改事件循环运行状态标志位
+    m_running = false;
+
+    // 如果当前处于poll()等待或退出其他线程的事件循环时，则唤醒
+    if (m_waiting || m_threadId != std::this_thread::get_id()) {
+        wakeup();
+    }
+
     return true;
 }
 
 bool EventLoop::wakeup() {
+    uint64_t data = 1;
+    if (write(m_wakeupChannel->getFd(), &data, sizeof(data)) < sizeof(data)) {
+        LOG_ERROR << "Eventloop wakeup error. write failed. thread id: " << m_threadId
+                  << " errno: " << errno << ", error: " << strerror(errno);
+    }
     return true;
 }
 
 bool EventLoop::updateChannel(ChannelPtr channel) {
-    
+    // 判断channel是否有效或是否为与当前eventLoop关联的channel
+    if (nullptr == channel || channel->getOwnerLoop().expired() || channel->getOwnerLoop().lock()->getThreadId() != m_threadId) {
+        LOG_ERROR << "Eventloop update channel error. channel invalid. thread id: " << m_threadId;
+        return false;
+    }
+
+    // 更新channel
+    if (!m_poller->updateChannel(channel)) {
+        LOG_ERROR << "Eventloop update channel error. update poller channel failed. thread id: " << m_threadId;
+        return false;
+    }
     return true;
 }
 
 bool EventLoop::removeChannel(ChannelPtr channel) {
+    // 判断channel是否有效或是否为与当前eventLoop关联的channel
+    if (nullptr == channel || channel->getOwnerLoop().expired() || channel->getOwnerLoop().lock()->getThreadId() != m_threadId) {
+        LOG_ERROR << "Eventloop remove channel error. channel invalid. thread id: " << m_threadId;
+        return false;
+    }
+
+    // 移除channel
+    if (!m_poller->removeChannel(channel)) {
+        LOG_ERROR << "Eventloop remove channel error. remove poller channel failed. thread id: " << m_threadId;
+        return false;
+    }
+    return true;
+}
+
+bool EventLoop::handleTask() {
+    TaskList currentTaskList;
+
+    {
+        std::lock_guard<std::mutex> lock(m_taskMutex);
+
+        // 将当前EventLoop分配的任务转移到currentTaskList
+        currentTaskList.swap(m_taskList);
+    }
+
+    // 处理当前EventLoop分配的任务
+    for (const auto& task : currentTaskList) {
+        task();
+    }
+
     return true;
 }
 

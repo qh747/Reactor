@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <unordered_set>
 #include "Utils/Logger.h"
 #include "Net/EventLoop.h"
@@ -45,6 +46,9 @@ Channel::~Channel() {
     if (State_t::StatePending != m_state) {
         this->close();
     }
+
+    // 关闭fd
+    ::close(m_fd);
 
     LOG_DEBUG << "Channel deconstruct. fd: " << m_fd;
 }

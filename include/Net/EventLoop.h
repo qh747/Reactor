@@ -66,6 +66,21 @@ public:
      */
     bool removeChannel(ChannelPtr channel);
 
+    /**
+     * @brief  执行任务
+     * @return 执行结果
+     * @param  task 需要执行的任务
+     */
+    bool executeTask(Task task);
+
+    /**
+     * @brief  执行任务
+     * @return 执行结果
+     * @param  task 需要执行的任务
+     * @param  highPriority 是否为高优先级任务
+     */
+    bool executeTaskInLoop(Task task, bool highPriority = false);
+
 public:
     /**
      * @brief  事件循环是否在运行
@@ -81,6 +96,14 @@ public:
      */
     inline bool isWaiting() const {
         return m_waiting;
+    }
+
+    /**
+     * @brief  判断当前线程是否为事件循环所在线程
+     * @return 判断结果
+     */
+    inline bool isInCurrentThread() const {
+        return m_threadId == std::this_thread::get_id();
     }
 
     /**

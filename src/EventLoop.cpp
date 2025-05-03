@@ -178,12 +178,11 @@ bool EventLoop::loop() {
         Timestamp returnTime;
         m_activeChannels.clear();
 
-        // 等待事件触发
+        // 事件循环流程
         {
+            // 等待事件触发
             m_waiting = true;
             returnTime = m_poller->poll(POLLER_DEFAULT_WAIT_TIME, m_activeChannels, errCode);
-            m_waiting = false;
-
             if (0 != errCode) {
                 if (EINTR != errCode && ETIMEDOUT != errCode) {
                     LOG_ERROR << "Eventloop loop error. poll failed. thread id: " << m_threadId
@@ -194,16 +193,15 @@ bool EventLoop::loop() {
                     continue;
                 }
             }
-        }
         
-        // 处理事件
-        {
+            // 处理事件
             for (const auto& channelWrapper : m_activeChannels) {
                 channelWrapper->m_channel->handleEvent(channelWrapper->m_activeEvType, returnTime);
             }
     
             // 处理其他EventLoop分配给当前EventLoop的任务
             this->handleTask();
+            m_waiting = false;
         }
     }
 
@@ -222,7 +220,7 @@ bool EventLoop::quit() {
     m_running = false;
 
     // 如果当前处于poll()等待或退出其他线程的事件循环时，则唤醒
-    if (m_waiting || m_threadId != std::this_thread::get_id()) {
+    if (m_waiting || !this->isInCurrentThread()) {
         wakeup();
     }
 
@@ -239,9 +237,16 @@ bool EventLoop::wakeup() {
 }
 
 bool EventLoop::updateChannel(ChannelPtr channel) {
-    // 判断channel是否有效或是否为与当前eventLoop关联的channel
-    if (nullptr == channel || channel->getOwnerLoop().expired() || channel->getOwnerLoop().lock()->getThreadId() != m_threadId) {
+    // 判断channel是否有效
+    if (nullptr == channel) {
         LOG_ERROR << "Eventloop update channel error. channel invalid. thread id: " << m_threadId;
+        return false;
+    }
+
+    // 判断channel是否与当前eventLoop关联
+    auto channelOwnerLoop = channel->getOwnerLoop();
+    if (nullptr == channel || channelOwnerLoop.expired() || channelOwnerLoop.lock()->getThreadId() != m_threadId) {
+        LOG_ERROR << "Eventloop update channel error. channel owner event loop invalid. thread id: " << m_threadId;
         return false;
     }
 
@@ -254,9 +259,16 @@ bool EventLoop::updateChannel(ChannelPtr channel) {
 }
 
 bool EventLoop::removeChannel(ChannelPtr channel) {
-    // 判断channel是否有效或是否为与当前eventLoop关联的channel
-    if (nullptr == channel || channel->getOwnerLoop().expired() || channel->getOwnerLoop().lock()->getThreadId() != m_threadId) {
+    // 判断channel是否有效
+    if (nullptr == channel) {
         LOG_ERROR << "Eventloop remove channel error. channel invalid. thread id: " << m_threadId;
+        return false;
+    }
+
+    // 判断channel是否与当前eventLoop关联
+    auto channelOwnerLoop = channel->getOwnerLoop();
+    if (nullptr == channel || channelOwnerLoop.expired() || channelOwnerLoop.lock()->getThreadId() != m_threadId) {
+        LOG_ERROR << "Eventloop remove channel error. channel owner event loop invalid. thread id: " << m_threadId;
         return false;
     }
 
@@ -265,6 +277,54 @@ bool EventLoop::removeChannel(ChannelPtr channel) {
         LOG_ERROR << "Eventloop remove channel error. remove poller channel failed. thread id: " << m_threadId;
         return false;
     }
+    return true;
+}
+
+bool EventLoop::executeTask(Task task) {
+    // 任务有效性校验
+    if (nullptr == task) {
+        LOG_ERROR << "Eventloop execute task error. task invalid. thread id: " << m_threadId;
+        return false;
+    }
+
+    // 任务执行
+    if (this->isInCurrentThread()) {
+        // 本线程的任务则直接执行
+        task();
+    }
+    else {
+        // 其他线程的任务则以高优先级缓存到当前EventLoop的任务队列中
+        this->executeTaskInLoop(task, true);
+    }
+
+    return true;
+}
+
+bool EventLoop::executeTaskInLoop(Task task, bool highPriority) {
+    // 任务有效性校验
+    if (nullptr == task) {
+        LOG_ERROR << "Eventloop execute task in loop error. task invalid. thread id: " << m_threadId;
+        return false;
+    }
+
+    // 缓存任务
+    {
+        std::lock_guard<std::mutex> lock(m_taskMutex);
+
+        if (highPriority) {
+            m_taskList.push_front(task);
+        }
+        else {
+            m_taskList.push_back(task);
+        }
+    }
+
+    // 唤醒当前EventLoop所在线程，以便处理任务
+    if (!this->isInCurrentThread() || m_waiting) {
+        // 如果当前线程不是EventLoop所在线程或者当前EventLoop正在等待，则唤醒
+        this->wakeup();
+    }
+
     return true;
 }
 

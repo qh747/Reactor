@@ -5,7 +5,11 @@ set(TEST_NAME TestNetAddr)
 add_executable(${TEST_NAME} TestNetAddr.cpp)
 
 # 添加依赖
-add_dependencies(${TEST_NAME} ${REACTOR_LIB_SHARED})
+if (BUILD_SHARED_REACTOR_LIB)
+    add_dependencies(${TEST_NAME} ${REACTOR_LIB_SHARED})
+else()
+    add_dependencies(${TEST_NAME} ${REACTOR_LIB_STATIC})
+endif()
 
 # 链接库
 target_link_directories(${TEST_NAME} PRIVATE ${REACTOR_LIBRARY_PATH})

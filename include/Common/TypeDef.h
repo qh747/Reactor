@@ -2,6 +2,7 @@
 #include <memory>
 #include <chrono>
 #include <vector>
+#include <functional>
 #include <unordered_map>
 
 namespace Common {
@@ -10,6 +11,18 @@ namespace Common {
 using Timestamp = std::chrono::system_clock::time_point;
 
 }; // namespace Common
+
+namespace Utils {
+
+// TimerQueue类型前置声明
+class TimerQueue;
+using TimerQueuePtr = std::shared_ptr<TimerQueue>;
+using TimerQueueWkPtr = std::weak_ptr<TimerQueue>;
+
+using TimerId = uint64_t;
+using TimerTaskCb = std::function<void()>;
+
+}; // namespace Utils
 
 namespace Net {
 

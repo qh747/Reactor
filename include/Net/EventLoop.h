@@ -83,6 +83,34 @@ public:
 
 public:
     /**
+     * @brief  添加定时器任务
+     * @return 添加结果
+     * @param  id 定时器任务id
+     * @param  cb 定时器任务回调函数
+     * @param  expires 定时器到期时间
+     * @param  intervalSec 定时器任务间隔(单位: 秒)
+     */
+    bool addTimerAtSpecificTime(TimerId& id, TimerTaskCb cb, Timestamp expires, double intervalSec = 0);
+
+    /**
+     * @brief  添加定时器任务
+     * @return 添加结果
+     * @param  id 定时器任务id
+     * @param  cb 定时器任务回调函数
+     * @param  delay 定时器任务延迟(单位: 秒)
+     * @param  intervalSec 定时器任务间隔(单位: 秒)
+     */
+    bool addTimerAfterSpecificTime(TimerId& id, TimerTaskCb cb, double delay, double intervalSec = 0);
+
+    /**
+     * @brief  移除定时器任务
+     * @return 移除结果
+     * @param  id 定时器任务id
+     */
+    bool delTimer(TimerId id);
+
+public:
+    /**
      * @brief  事件循环是否在运行
      * @return 判断结果
      */
@@ -151,6 +179,9 @@ private:
 
     // 互斥锁, 保护任务列表
     std::mutex m_taskMutex;
+
+    // 定时器队列
+    TimerQueuePtr m_timerQueue;
 };
 
 /**

@@ -24,9 +24,9 @@ public:
     using WkPtr = std::weak_ptr<Channel>;
 
     // 事件回调函数类型
-    using EventCb = std::function<void(Common::Timestamp)>;
+    using EventCb = std::function<void(Timestamp)>;
     // 事件回调函数map，key = 事件类型，value = 事件回调函数
-    using EventCbMap = std::unordered_map<Common::Event_t, EventCb>;
+    using EventCbMap = std::unordered_map<Event_t, EventCb>;
 
 public:
     Channel(EventLoopWkPtr loop, int fd);

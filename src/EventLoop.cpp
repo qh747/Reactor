@@ -7,6 +7,7 @@
 #include <sys/eventfd.h>
 #include "Common/ConfigDef.h"
 #include "Utils/Logger.h"
+#include "Utils/Timer.h"
 #include "Factory/PollerFactory.h"
 #include "Net/Channel.h"
 #include "Net/Poller.h"
@@ -124,6 +125,9 @@ bool EventLoop::init() {
         }
         m_wakeupChannel = std::make_shared<Channel>(this->weak_from_this(), wakeupFd);
 
+        // 创建定时器队列
+        m_timerQueue = std::make_shared<TimerQueue>(this->weak_from_this());
+
         // 创建I/O多路复用封装对象
         m_poller = PollerFactory::CreatePoller(POLLER_DEFAULT_TYPE, this->weak_from_this(), 
         EventLoopIdGenerator::GenerateId("EVENT_LOOP_POLLER_"));
@@ -149,13 +153,19 @@ bool EventLoop::init() {
             // 读取数据并非主要目的，主要目的用于唤醒处于poll()等待的eventLoop
             auto strongSelf = weakSelf.lock();
             uint64_t data = 0;
-            if (read(strongSelf->m_wakeupChannel->getFd(), &data, sizeof(data)) < sizeof(data)) {
+            if (::read(strongSelf->m_wakeupChannel->getFd(), &data, sizeof(data)) < sizeof(data)) {
                 LOG_ERROR << "Eventloop wakeup error. read failed. thread id: " << strongSelf->m_threadId
                           << " errno: " << errno << ", error: " << strerror(errno);
             }
         });
 
         m_wakeupChannel->open(Event_t::EvTypeRead);
+
+        // 初始化定时器队列
+        if (!m_timerQueue->init()) {
+            LOG_ERROR << "Eventloop init error. timer queue init failed. thread id: " << m_threadId;
+            return false;
+        }
     }
     
     return true;
@@ -229,7 +239,7 @@ bool EventLoop::quit() {
 
 bool EventLoop::wakeup() {
     uint64_t data = 1;
-    if (write(m_wakeupChannel->getFd(), &data, sizeof(data)) < sizeof(data)) {
+    if (::write(m_wakeupChannel->getFd(), &data, sizeof(data)) < sizeof(data)) {
         LOG_ERROR << "Eventloop wakeup error. write failed. thread id: " << m_threadId
                   << " errno: " << errno << ", error: " << strerror(errno);
     }
@@ -326,6 +336,19 @@ bool EventLoop::executeTaskInLoop(Task task, bool highPriority) {
     }
 
     return true;
+}
+
+bool EventLoop::addTimerAtSpecificTime(TimerQueue::TimerId& id, TimerTask::Task cb, Timestamp expires, double intervalSec) {
+    return m_timerQueue->addTimerTask(id, cb, expires, intervalSec);
+}
+
+bool EventLoop::addTimerAfterSpecificTime(TimerQueue::TimerId& id, TimerTask::Task cb, double delay, double intervalSec) {
+    auto firstRunTime = std::chrono::system_clock::now() + std::chrono::milliseconds(static_cast<int64_t>(delay * 1000));
+    return m_timerQueue->addTimerTask(id, cb, firstRunTime, intervalSec);
+}
+
+bool EventLoop::delTimer(TimerId id) {
+    return m_timerQueue->delTimerTask(id);
 }
 
 bool EventLoop::handleTask() {

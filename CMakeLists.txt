@@ -13,6 +13,10 @@ set(CMAKE_BUILD_TYPE Debug)
 # 设置C++标准
 set(CMAKE_CXX_STANDARD 11)
 
+# 设置静态库/动态库编译开启选项
+option(BUILD_SHARED_REACTOR_LIB "Build Shared Libraries" OFF)
+option(BUILD_STATIC_REACTOR_LIB "Build Static Libraries" ON)
+
 # 设置静态库/动态库名称
 set(REACTOR_LIB_NAME ${PROJECT_NAME})
 set(REACTOR_LIB_STATIC "${PROJECT_NAME}Static")
@@ -28,19 +32,33 @@ set(LIBRARY_OUTPUT_PATH ${REACTOR_LIBRARY_PATH})
 # 参与编译的文件
 aux_source_directory(${CMAKE_SOURCE_DIR}/src SRC_FILES)
 
-# 生成动态库
-add_library(${REACTOR_LIB_SHARED} SHARED ${SRC_FILES})
+# 生成动态库/静态库
+if (BUILD_SHARED_REACTOR_LIB AND BUILD_STATIC_REACTOR_LIB)
+    message("Build Shared Library And Static Library Enabled")
 
-# 动态库名称为LIB_NAME
-set_target_properties(${REACTOR_LIB_SHARED} PROPERTIES OUTPUT_NAME ${REACTOR_LIB_NAME})
-target_include_directories(${REACTOR_LIB_SHARED} PUBLIC ${REACTOR_INCLUDE_PATH})
+    add_library(${REACTOR_LIB_SHARED} SHARED ${SRC_FILES})
+    set_target_properties(${REACTOR_LIB_SHARED} PROPERTIES OUTPUT_NAME ${REACTOR_LIB_NAME})
+    target_include_directories(${REACTOR_LIB_SHARED} PUBLIC ${REACTOR_INCLUDE_PATH})
+    
+    add_library(${REACTOR_LIB_STATIC} STATIC ${SRC_FILES})
+    set_target_properties(${REACTOR_LIB_STATIC} PROPERTIES OUTPUT_NAME ${REACTOR_LIB_NAME})
+    target_include_directories(${REACTOR_LIB_STATIC} PUBLIC ${REACTOR_INCLUDE_PATH})
 
-# 生成静态库
-add_library(${REACTOR_LIB_STATIC} STATIC ${SRC_FILES})
+elseif (BUILD_SHARED_REACTOR_LIB)
+    message("Only Build Shared Library Enabled")
+    
+    add_library(${REACTOR_LIB_SHARED} SHARED ${SRC_FILES})
+    set_target_properties(${REACTOR_LIB_SHARED} PROPERTIES OUTPUT_NAME ${REACTOR_LIB_NAME})
+    target_include_directories(${REACTOR_LIB_SHARED} PUBLIC ${REACTOR_INCLUDE_PATH})
 
-# 静态库名称为LIB_NAME
-set_target_properties(${REACTOR_LIB_STATIC} PROPERTIES OUTPUT_NAME ${REACTOR_LIB_NAME})
-target_include_directories(${REACTOR_LIB_STATIC} PUBLIC ${REACTOR_INCLUDE_PATH})
+else()
+    message("Only Build Static Library Enabled")
+
+    add_library(${REACTOR_LIB_STATIC} STATIC ${SRC_FILES})
+    set_target_properties(${REACTOR_LIB_STATIC} PROPERTIES OUTPUT_NAME ${REACTOR_LIB_NAME})
+    target_include_directories(${REACTOR_LIB_STATIC} PUBLIC ${REACTOR_INCLUDE_PATH})
+
+endif ()
 
 # 测试程序
 option(BUILD_TESTS "Build Tests" ON)

@@ -47,9 +47,6 @@ Channel::~Channel() {
         this->close();
     }
 
-    // 关闭fd
-    ::close(m_fd);
-
     LOG_DEBUG << "Channel deconstruct. fd: " << m_fd;
 }
 

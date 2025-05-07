@@ -11,17 +11,13 @@ using namespace Utils;
 
 namespace Net {
 
-// 前置声明EventLoop管理类
-class EventLoopManager;
-
 /**
  * @note  EventLoop不允许拷贝，但允许通过指针形式传递
  * @brief 事件循环类
  */
 class EventLoop : public Noncopyable, public std::enable_shared_from_this<EventLoop> {
 public:
-    // 允许以下类初始化EventLoop
-    friend class EventLoopManager;
+    friend class Thread::EventLoopThread;
 
 public:
     using Ptr = std::shared_ptr<EventLoop>;
@@ -183,20 +179,5 @@ private:
     // 定时器队列
     TimerQueuePtr m_timerQueue;
 };
-
-/**
- * @brief  事件循环管理类
- */
-class EventLoopManager : public NoncopyableConstructable {
-public:
-    class ManageObject;
-
-public:
-    /**
-     * @brief  获取当前线程的事件循环
-     * @return 当前线程的事件循环
-     */
-    static EventLoop::Ptr GetCurrentEventLoop();
-}; 
 
 }; // namespace Net

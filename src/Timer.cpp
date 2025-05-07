@@ -57,6 +57,8 @@ TimerQueue::~TimerQueue() {
     if (nullptr != m_timerChannel) {
         m_timerChannel->close();
     }
+
+    ::close(m_timerChannel->getFd());
 }
 
 bool TimerQueue::addTimerTask(TimerId& id, TimerTask::Task cb, Timestamp expires, double intervalSec) {

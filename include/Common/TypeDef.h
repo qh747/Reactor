@@ -47,3 +47,12 @@ using EventLoopPtr = std::shared_ptr<EventLoop>;
 using EventLoopWkPtr = std::weak_ptr<EventLoop>;
 
 }; // namespace Net
+
+namespace Thread {
+
+// 事件循环线程类型前置声明
+class EventLoopThread;
+using EventLoopThreadPtr = std::shared_ptr<EventLoopThread>;
+using EventLoopThreadWkPtr = std::weak_ptr<EventLoopThread>;
+
+}; // namespace Thread

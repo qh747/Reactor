@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <cstring>
 #include <unordered_set>
-#include <unordered_map>
 #include <unistd.h>
 #include <sys/eventfd.h>
 #include "Common/ConfigDef.h"
@@ -105,6 +104,8 @@ EventLoop::~EventLoop() {
     if (nullptr != m_wakeupChannel) {
         m_wakeupChannel->close();
     }
+
+    ::close(m_wakeupChannel->getFd());
 }
 
 bool EventLoop::init() {
@@ -188,31 +189,28 @@ bool EventLoop::loop() {
         Timestamp returnTime;
         m_activeChannels.clear();
 
-        // 事件循环流程
-        {
-            // 等待事件触发
-            m_waiting = true;
-            returnTime = m_poller->poll(POLLER_DEFAULT_WAIT_TIME, m_activeChannels, errCode);
-            if (0 != errCode) {
-                if (EINTR != errCode && ETIMEDOUT != errCode) {
-                    LOG_ERROR << "Eventloop loop error. poll failed. thread id: " << m_threadId
-                              << " errno: " << errno << ", error: " << strerror(errno);
-                    return false;
-                }
-                else {
-                    continue;
-                }
+        // 等待事件触发
+        m_waiting = true;
+        returnTime = m_poller->poll(POLLER_DEFAULT_WAIT_TIME, m_activeChannels, errCode);
+        if (0 != errCode) {
+            if (EINTR != errCode && ETIMEDOUT != errCode) {
+                LOG_ERROR << "Eventloop loop error. poll failed. thread id: " << m_threadId
+                          << " errno: " << errno << ", error: " << strerror(errno);
+                return false;
             }
-        
-            // 处理事件
-            for (const auto& channelWrapper : m_activeChannels) {
-                channelWrapper->m_channel->handleEvent(channelWrapper->m_activeEvType, returnTime);
+            else {
+                continue;
             }
-    
-            // 处理其他EventLoop分配给当前EventLoop的任务
-            this->handleTask();
-            m_waiting = false;
         }
+    
+        // 处理事件
+        for (const auto& channelWrapper : m_activeChannels) {
+            channelWrapper->m_channel->handleEvent(channelWrapper->m_activeEvType, returnTime);
+        }
+
+        // 处理其他EventLoop分配给当前EventLoop的任务
+        this->handleTask();
+        m_waiting = false;
     }
 
     LOG_INFO << "Eventloop stop. thread id: " << m_threadId;
@@ -367,49 +365,6 @@ bool EventLoop::handleTask() {
     }
 
     return true;
-}
-
-/** --------------------------  EventLoopManager ----------------------------------- */
-
-class EventLoopManager::ManageObject {
-public:
-    ~ManageObject() {
-        std::lock_guard<std::mutex> lock(m_mutex);
-
-        for (auto& it : m_eventLoopMap) {
-            if (it.second->isRunning()) {
-                it.second->quit();
-            }
-        }
-        m_eventLoopMap.clear();
-    }
-
-public:
-    std::mutex m_mutex;
-    std::unordered_map<std::thread::id, EventLoop::Ptr> m_eventLoopMap;
-};
-
-static EventLoopManager::ManageObject EventLoopManageObject;
-
-EventLoop::Ptr EventLoopManager::GetCurrentEventLoop() {
-    std::lock_guard<std::mutex> lock(EventLoopManageObject.m_mutex);
-
-    auto threadId = std::this_thread::get_id();
-    auto it = EventLoopManageObject.m_eventLoopMap.find(threadId);
-    if (EventLoopManageObject.m_eventLoopMap.end() != it) {
-        // eventloop已存在，直接返回
-        return it->second;
-    }
-    else {
-        // eventloop不存在，创建一个新的eventloop
-        EventLoop::Ptr eventLoop = std::make_shared<EventLoop>(threadId);
-        if (!eventLoop->init()) {
-            LOG_FATAL << "Get eventLoop error. initialize eventLoop error. thread id: " << threadId;
-        }
-
-        EventLoopManageObject.m_eventLoopMap[threadId] = eventLoop;
-        return eventLoop;
-    }
 }
 
 } // namespace Net

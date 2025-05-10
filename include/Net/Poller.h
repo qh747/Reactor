@@ -50,7 +50,7 @@ public:
      * @return 判断结果
      * @param  channel 需要判断的channel
      */
-    virtual bool hasChannel(ChannelPtr channel) const;
+    virtual bool hasChannel(const ChannelPtr& channel) const;
 
 public:
     /**

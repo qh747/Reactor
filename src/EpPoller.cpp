@@ -11,7 +11,7 @@ using namespace Utils;
 namespace Net {
 
 EpPoller::EpPoller(EventLoop::WkPtr loop, const std::string& id)
-    : Poller(loop, id),
+    : Poller(std::move(loop), id),
       m_epollFd(epoll_create1(EPOLL_CLOEXEC)),
       m_epollEventList(POLL_INIT_WAIT_EVENTS_SIZE) {
     // 创建失败，程序退出
@@ -27,7 +27,7 @@ EpPoller::~EpPoller() {
 }
 
 Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
-    int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(), m_epollEventList.size(), timeoutMs);
+    int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(), static_cast<int>(m_epollEventList.size()), timeoutMs);
     auto now = std::chrono::system_clock::now();
 
     if (activeEventSize < 0) {
@@ -58,7 +58,7 @@ Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int&
             }
 
             // 添加活跃的channel
-            Event_t evType = static_cast<Event_t>(event.events);
+            auto evType = static_cast<Event_t>(event.events);
             activeChannels.emplace_back(std::make_shared<ChannelWrapper>(channelMapIter->second, evType));
 
             LOG_DEBUG << "Epoll poll success. id: " << m_id << " fd: " << event.data.fd << " event type: " 
@@ -96,7 +96,9 @@ bool EpPoller::updateChannel(Channel::Ptr channel) {
         channel->setState(state);
 
         // epoll更新
-        this->operateControl(fd, evType, PollerCtrl_t::PollerAdd);
+        if (!this->operateControl(fd, evType, PollerCtrl_t::PollerAdd)) {
+            LOG_ERROR << "Update channel error. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state);
+        }
     }
     else if (State_t::StateInLoop == state) {
         if (Event_t::EvTypeNone == evType) {
@@ -105,10 +107,14 @@ bool EpPoller::updateChannel(Channel::Ptr channel) {
             channel->setState(state);
 
             // epoll更新
-            this->operateControl(fd, evType, PollerCtrl_t::PollerRemove);
+            if (!this->operateControl(fd, evType, PollerCtrl_t::PollerRemove)) {
+                LOG_ERROR << "Update channel error. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state);
+            }
         }
         else {
-            this->operateControl(fd, evType, PollerCtrl_t::PollerModify);
+            if (!this->operateControl(fd, evType, PollerCtrl_t::PollerModify)) {
+                LOG_ERROR << "Update channel error. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state);
+            }
         }
     }
     else {
@@ -154,10 +160,8 @@ bool EpPoller::removeChannel(Channel::Ptr channel) {
     return true;
 }
 
-bool EpPoller::operateControl(int fd, Event_t ev, PollerCtrl_t op) {
-    epoll_event event;
-    memset(&event, 0, sizeof(event));
-
+bool EpPoller::operateControl(int fd, Event_t ev, PollerCtrl_t op) const {
+    epoll_event event = {};
     event.data.fd = fd;
     event.events = static_cast<int>(ev);
 

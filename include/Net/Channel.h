@@ -145,7 +145,8 @@ public:
 
 public:
     ChannelWrapper(Channel::Ptr channel, Event_t activeEvType)
-        : m_channel(channel), m_activeEvType(activeEvType) {
+        : m_activeEvType(activeEvType),
+          m_channel(std::move(channel)) {
     }
     ~ChannelWrapper() = default;
 

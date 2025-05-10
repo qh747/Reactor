@@ -54,5 +54,6 @@ namespace Thread {
 class EventLoopThread;
 using EventLoopThreadPtr = std::shared_ptr<EventLoopThread>;
 using EventLoopThreadWkPtr = std::weak_ptr<EventLoopThread>;
+using ThreadInitCb = std::function<void(Net::EventLoopWkPtr)>;
 
 }; // namespace Thread

@@ -26,7 +26,7 @@ public:
     using TaskList = std::list<Task>;
 
 public:
-    EventLoop(std::thread::id threadId);
+    explicit EventLoop(std::thread::id threadId);
     ~EventLoop();
 
 public:
@@ -46,28 +46,28 @@ public:
      * @brief  唤醒事件循环
      * @return 唤醒结果
      */
-    bool wakeup();
+    bool wakeup() const;
 
     /**
      * @brief  更新channel
      * @return 更新结果
      * @param  channel 需要更新的channel
      */
-    bool updateChannel(ChannelPtr channel);
+    bool updateChannel(const ChannelPtr& channel) const;
 
     /**
      * @brief  移除channel
      * @return 移除结果
      * @param  channel 需要移除的channel
      */
-    bool removeChannel(ChannelPtr channel);
+    bool removeChannel(const ChannelPtr& channel) const;
 
     /**
      * @brief  执行任务
      * @return 执行结果
      * @param  task 需要执行的任务
      */
-    bool executeTask(Task task);
+    bool executeTask(const Task& task);
 
     /**
      * @brief  执行任务
@@ -75,7 +75,7 @@ public:
      * @param  task 需要执行的任务
      * @param  highPriority 是否为高优先级任务
      */
-    bool executeTaskInLoop(Task task, bool highPriority = false);
+    bool executeTaskInLoop(const Task& task, bool highPriority = false);
 
 public:
     /**
@@ -86,7 +86,7 @@ public:
      * @param  expires 定时器到期时间
      * @param  intervalSec 定时器任务间隔(单位: 秒)
      */
-    bool addTimerAtSpecificTime(TimerId& id, TimerTaskCb cb, Timestamp expires, double intervalSec = 0);
+    bool addTimerAtSpecificTime(TimerId& id, TimerTaskCb cb, Timestamp expires, double intervalSec = 0) const;
 
     /**
      * @brief  添加定时器任务
@@ -96,14 +96,14 @@ public:
      * @param  delay 定时器任务延迟(单位: 秒)
      * @param  intervalSec 定时器任务间隔(单位: 秒)
      */
-    bool addTimerAfterSpecificTime(TimerId& id, TimerTaskCb cb, double delay, double intervalSec = 0);
+    bool addTimerAfterSpecificTime(TimerId& id, TimerTaskCb cb, double delay, double intervalSec = 0) const;
 
     /**
      * @brief  移除定时器任务
      * @return 移除结果
      * @param  id 定时器任务id
      */
-    bool delTimer(TimerId id);
+    bool delTimer(TimerId id) const;
 
 public:
     /**

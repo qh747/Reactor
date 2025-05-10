@@ -107,7 +107,7 @@ public:
     using TimerTasks = std::set<TimerTask::Ptr, TimerTask::Compare>;
 
 public:
-    TimerQueue(EventLoopWkPtr loop);
+    explicit TimerQueue(EventLoopWkPtr loop);
     ~TimerQueue();
 
 public:

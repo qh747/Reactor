@@ -8,7 +8,7 @@ using namespace Utils;
 
 namespace Net {
 
-InetAddrV4::InetAddrV4(const std::string& ip, uint16_t port) {
+InetAddrV4::InetAddrV4(const std::string& ip, uint16_t port) : m_addr() {
     if (ip.empty() || 0 == port) {
         throw std::runtime_error("Invalid input param");
     }
@@ -22,14 +22,14 @@ InetAddrV4::InetAddrV4(const std::string& ip, uint16_t port) {
 
     m_addr.sin_port = htons(port);
 
-    if (!this->valid()) {
+    if (!this->InetAddrV4::valid()) {
         throw std::runtime_error("Invalid socket address");
     }
 }
 
 InetAddrV4::InetAddrV4(const sockaddr_in& addr)
     : m_addr(addr) {
-    if (!this->valid()) {
+    if (!this->InetAddrV4::valid()) {
         throw std::runtime_error("Invalid socket address");
     }
 }

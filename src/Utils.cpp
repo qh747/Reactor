@@ -21,13 +21,13 @@ std::string TimeHelper::GetCurrentTime() {
 
 std::string TimeHelper::GetCurrentData() {
     time_t now = time(nullptr);
-    struct tm tstruct;
+    struct tm t = {};
 
     char buf[80];
-    tstruct = *localtime(&now);
+    t = *localtime(&now);
 
-    strftime(buf, sizeof(buf), "%Y%m%d", &tstruct);
-    return std::string(buf);
+    strftime(buf, sizeof(buf), "%Y%m%d", &t);
+    return buf;
 }
 
 const char* StringHelper::GetFileName(const char* path) {
@@ -106,7 +106,7 @@ std::string DirHelper::GetDirectory(const std::string& path) {
 }
 
 bool DirHelper::CheckDirectoryExists(const std::string& path) {
-    struct stat info;
+    struct stat info = {};
     if (stat(path.c_str(), &info)) {
         return false;
     }

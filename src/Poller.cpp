@@ -11,7 +11,8 @@ namespace Net {
 static std::mutex PollerIdSetMutex;
 static std::unordered_set<std::string> PollerIdSet;
 
-Poller::Poller(EventLoop::WkPtr loop, const std::string& id) : m_ownerLoop(loop), m_id(id) {
+Poller::Poller(EventLoop::WkPtr loop, const std::string& id)
+    : m_id(id), m_ownerLoop(std::move(loop)) {
     std::lock_guard<std::mutex> lock(PollerIdSetMutex);
 
     if (PollerIdSet.end() != PollerIdSet.find(id)) {
@@ -20,7 +21,7 @@ Poller::Poller(EventLoop::WkPtr loop, const std::string& id) : m_ownerLoop(loop)
     PollerIdSet.insert(id);
 }
 
-bool Poller::hasChannel(Channel::Ptr channel) const {
+bool Poller::hasChannel(const Channel::Ptr& channel) const {
     return nullptr == channel ? false : m_channelMap.end() != m_channelMap.find(channel->getFd());
 }
 

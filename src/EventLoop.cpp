@@ -186,12 +186,11 @@ bool EventLoop::loop() {
     while (m_running) {
         // 事件相关参数重置
         int errCode = 0;
-        Timestamp returnTime;
         m_activeChannels.clear();
 
         // 等待事件触发
         m_waiting = true;
-        returnTime = m_poller->poll(POLLER_DEFAULT_WAIT_TIME, m_activeChannels, errCode);
+        Timestamp returnTime = m_poller->poll(POLLER_DEFAULT_WAIT_TIME, m_activeChannels, errCode);
         if (0 != errCode) {
             if (EINTR != errCode && ETIMEDOUT != errCode) {
                 LOG_ERROR << "Eventloop loop error. poll failed. thread id: " << m_threadId
@@ -229,22 +228,26 @@ bool EventLoop::quit() {
 
     // 如果当前处于poll()等待或退出其他线程的事件循环时，则唤醒
     if (m_waiting || !this->isInCurrentThread()) {
-        wakeup();
+        if (!wakeup()) {
+            LOG_ERROR << "Eventloop quit error. wakeup failed. thread id: " << m_threadId;
+            return false;
+        }
     }
 
     return true;
 }
 
-bool EventLoop::wakeup() {
+bool EventLoop::wakeup() const {
     uint64_t data = 1;
     if (::write(m_wakeupChannel->getFd(), &data, sizeof(data)) < sizeof(data)) {
         LOG_ERROR << "Eventloop wakeup error. write failed. thread id: " << m_threadId
                   << " errno: " << errno << ", error: " << strerror(errno);
+        return false;
     }
     return true;
 }
 
-bool EventLoop::updateChannel(ChannelPtr channel) {
+bool EventLoop::updateChannel(const ChannelPtr& channel) const {
     // 判断channel是否有效
     if (nullptr == channel) {
         LOG_ERROR << "Eventloop update channel error. channel invalid. thread id: " << m_threadId;
@@ -266,7 +269,7 @@ bool EventLoop::updateChannel(ChannelPtr channel) {
     return true;
 }
 
-bool EventLoop::removeChannel(ChannelPtr channel) {
+bool EventLoop::removeChannel(const ChannelPtr& channel) const {
     // 判断channel是否有效
     if (nullptr == channel) {
         LOG_ERROR << "Eventloop remove channel error. channel invalid. thread id: " << m_threadId;
@@ -288,7 +291,7 @@ bool EventLoop::removeChannel(ChannelPtr channel) {
     return true;
 }
 
-bool EventLoop::executeTask(Task task) {
+bool EventLoop::executeTask(const Task& task) {
     // 任务有效性校验
     if (nullptr == task) {
         LOG_ERROR << "Eventloop execute task error. task invalid. thread id: " << m_threadId;
@@ -308,7 +311,7 @@ bool EventLoop::executeTask(Task task) {
     return true;
 }
 
-bool EventLoop::executeTaskInLoop(Task task, bool highPriority) {
+bool EventLoop::executeTaskInLoop(const Task& task, bool highPriority) {
     // 任务有效性校验
     if (nullptr == task) {
         LOG_ERROR << "Eventloop execute task in loop error. task invalid. thread id: " << m_threadId;
@@ -330,22 +333,24 @@ bool EventLoop::executeTaskInLoop(Task task, bool highPriority) {
     // 唤醒当前EventLoop所在线程，以便处理任务
     if (!this->isInCurrentThread() || m_waiting) {
         // 如果当前线程不是EventLoop所在线程或者当前EventLoop正在等待，则唤醒
-        this->wakeup();
+        if (!this->wakeup()) {
+            LOG_ERROR << "Eventloop execute task in loop error. wakeup failed. thread id: " << m_threadId;
+        }
     }
 
     return true;
 }
 
-bool EventLoop::addTimerAtSpecificTime(TimerQueue::TimerId& id, TimerTask::Task cb, Timestamp expires, double intervalSec) {
-    return m_timerQueue->addTimerTask(id, cb, expires, intervalSec);
+bool EventLoop::addTimerAtSpecificTime(TimerQueue::TimerId& id, TimerTask::Task cb, Timestamp expires, double intervalSec) const {
+    return m_timerQueue->addTimerTask(id, std::move(cb), expires, intervalSec);
 }
 
-bool EventLoop::addTimerAfterSpecificTime(TimerQueue::TimerId& id, TimerTask::Task cb, double delay, double intervalSec) {
+bool EventLoop::addTimerAfterSpecificTime(TimerQueue::TimerId& id, TimerTask::Task cb, double delay, double intervalSec) const {
     auto firstRunTime = std::chrono::system_clock::now() + std::chrono::milliseconds(static_cast<int64_t>(delay * 1000));
-    return m_timerQueue->addTimerTask(id, cb, firstRunTime, intervalSec);
+    return m_timerQueue->addTimerTask(id, std::move(cb), firstRunTime, intervalSec);
 }
 
-bool EventLoop::delTimer(TimerId id) {
+bool EventLoop::delTimer(TimerId id) const {
     return m_timerQueue->delTimerTask(id);
 }
 

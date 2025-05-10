@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include <unordered_set>
 #include "Utils/Logger.h"
 #include "Net/EventLoop.h"
@@ -31,14 +30,13 @@ const static std::unordered_set<Event_t> ValidCbEvents = {
     Event_t::EvTypeError,
     Event_t::EvTypeReadWrite};
 
-const static int EvReadTypeCmp = static_cast<int>(Event_t::EvTypeRead);
-const static int EvWriteTypeCmp = static_cast<int>(Event_t::EvTypeWrite);
-const static int EvCloseTypeCmp = static_cast<int>(Event_t::EvTypeClose);
-const static int EvErrorTypeCmp = static_cast<int>(Event_t::EvTypeError);
+constexpr static int EvReadTypeCmp = static_cast<int>(Event_t::EvTypeRead);
+constexpr static int EvWriteTypeCmp = static_cast<int>(Event_t::EvTypeWrite);
+constexpr static int EvCloseTypeCmp = static_cast<int>(Event_t::EvTypeClose);
+constexpr static int EvErrorTypeCmp = static_cast<int>(Event_t::EvTypeError);
 
 Channel::Channel(EventLoop::WkPtr loop, int fd)
-    : m_ownerLoop(loop),
-      m_fd(fd) {
+    : m_fd(fd), m_ownerLoop(std::move(loop)) {
     LOG_DEBUG << "Channel construct. fd: " << m_fd;
 }
 
@@ -168,7 +166,7 @@ bool Channel::setEventCb(Event_t type, EventCb cb) {
 
     // 事件处理回调函数无效
     if (nullptr == cb) {
-        LOG_ERROR << "Channel set event callback function error. event callback funtion invalid. fd: "
+        LOG_ERROR << "Channel set event callback function error. event callback function invalid. fd: "
                   << m_fd << " event type: " << StringHelper::EventTypeToString(type);
         return false;
     }
@@ -180,7 +178,7 @@ bool Channel::setEventCb(Event_t type, EventCb cb) {
 bool Channel::handleEventWithoutCheck(Event_t type, Timestamp recvTime) {
     auto evCbIter = m_evCbMap.find(Event_t::EvTypeRead);
     if (m_evCbMap.end() == evCbIter) {
-        LOG_WARN << "Channel handle event warning. event callback funtion not regist. fd: "
+        LOG_WARN << "Channel handle event warning. event callback function not regist. fd: "
                  << m_fd << " event type: " << StringHelper::EventTypeToString(type);
         return false;
     }

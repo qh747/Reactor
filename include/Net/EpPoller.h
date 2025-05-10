@@ -49,7 +49,7 @@ private:
      * @param  ev 操作的事件
      * @param  op 操作类型
      */
-    bool operateControl(int fd, Event_t ev, PollerCtrl_t op);
+    bool operateControl(int fd, Event_t ev, PollerCtrl_t op) const;
 
 private:
     // epoll fd

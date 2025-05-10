@@ -7,12 +7,12 @@
 
 namespace Factory {
 
-Poller::Ptr PollerFactory::CreatePoller(Poller_t type, EventLoop::WkPtr loop, const std::string& id) {
+Poller::Ptr PollerFactory::CreatePoller(Poller_t type, EventLoopWkPtr loop, const std::string& id) {
     if (Poller_t::PollerPoll == type) {
-        return std::make_shared<PPoller>(loop, id);
+        return std::make_shared<PPoller>(std::move(loop), id);
     }
     else if (Poller_t::PollerEpoll == type) {
-        return std::make_shared<EpPoller>(loop, id);
+        return std::make_shared<EpPoller>(std::move(loop), id);
     }
     else {
         LOG_ERROR << "Create poller error. invalid poller type. type: " << static_cast<int>(type) << " id: " << id;

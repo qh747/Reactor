@@ -64,7 +64,7 @@ private:
     std::ofstream m_logFile;
 };
 
-void Logger::flush() {
+void Logger::flush() const {
     if (m_level < m_lowestLevel) {
         return;
     }

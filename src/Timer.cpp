@@ -15,7 +15,7 @@ static std::atomic<uint64_t> TimerIdCounter {0};
 
 TimerTask::TimerTask(Task cb, Timestamp expires, double intervalSec) 
     : m_id(TimerIdCounter++),
-      m_cb(cb), 
+      m_cb(std::move(cb)),
       m_expires(expires), 
       m_intervalSec(intervalSec), 
       m_repeat(intervalSec > 0.0) {

@@ -39,7 +39,7 @@ public:
 
 public:
     Logger(LogLevel level, const std::string& file, int line)
-        : m_level(level), m_file(file), m_line(line) {
+        : m_line(line), m_level(level), m_file(file) {
     }
 
     ~Logger() {
@@ -89,7 +89,7 @@ private:
     /**
      * @brief 刷新缓冲区内容到输出窗口
      */
-    void flush();
+    void flush() const;
 
 private:
     // 输出日志所在行

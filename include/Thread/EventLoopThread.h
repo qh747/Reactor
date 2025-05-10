@@ -19,10 +19,9 @@ public:
     using Ptr = std::shared_ptr<EventLoopThread>;
     using WkPtr = std::weak_ptr<EventLoopThread>;
     using ThreadPtr = std::shared_ptr<std::thread>;
-    using ThreadInitCb = std::function<void(Net::EventLoopWkPtr)>;
 
 public:
-    EventLoopThread(ThreadInitCb cb = nullptr);
+    explicit EventLoopThread(ThreadInitCb cb = nullptr);
     ~EventLoopThread();
 
 public:
@@ -44,7 +43,7 @@ public:
      * @return 获取结果
      * @param  eventLoop 事件循环
      */
-    inline bool getEventLoop(Net::EventLoopWkPtr& eventLoop) {
+    inline bool getEventLoop(Net::EventLoopWkPtr& eventLoop) const {
         // 非有效状态下不允许获取事件循环
         if (!m_threadStartFlag || m_threadExitFlag || nullptr == m_eventLoop) {
             return false;

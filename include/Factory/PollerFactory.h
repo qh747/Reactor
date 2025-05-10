@@ -18,9 +18,8 @@ public:
      * @return Poller::Ptr Poller指针
      * @param  type Poller类型
      * @param  loop EventLoop指针
-     * @param  id Poller id
      */
-    static PollerPtr CreatePoller(Poller_t type, EventLoopWkPtr loop, const std::string& id);
+    static PollerPtr CreatePoller(Poller_t type, EventLoopWkPtr loop);
 };
 
 }; // namespace Factory

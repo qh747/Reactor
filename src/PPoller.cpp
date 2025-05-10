@@ -8,9 +8,9 @@ using namespace Utils;
 
 namespace Net {
 
-PPoller::PPoller(EventLoopWkPtr loop, const std::string& id) 
-    : Poller(std::move(loop), id) {
-    LOG_DEBUG << "Poll poller construct. id: " << id;
+PPoller::PPoller(EventLoopWkPtr loop) 
+    : Poller(std::move(loop)) {
+    LOG_DEBUG << "Poll poller construct. id: " << m_id;
 }
 
 PPoller::~PPoller() {

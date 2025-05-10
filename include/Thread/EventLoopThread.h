@@ -3,7 +3,6 @@
 #include <atomic>
 #include <memory>
 #include <thread>
-#include <functional>
 #include "Common/TypeDef.h"
 #include "Utils/Utils.h"
 using namespace Utils;
@@ -29,13 +28,13 @@ public:
      * @brief  运行事件循环线程
      * @return 运行结果
      */
-    bool run();
+    void run();
 
     /**
      * @brief  退出事件循环线程
      * @return 退出结果
      */
-    bool quit();
+    void quit();
 
 public:
     /**
@@ -51,6 +50,14 @@ public:
 
         eventLoop = m_eventLoop;
         return true;
+    }
+
+    /**
+     * @brief  获取线程id
+     * @return 线程id
+     */
+    inline std::thread::id getThreadId() const {
+        return m_threadId;
     }
 
 private:

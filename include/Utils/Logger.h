@@ -4,6 +4,7 @@
 #include <sstream>
 #include <functional>
 #include <unordered_map>
+#include <utility>
 #include "Utils/Utils.h"
 
 namespace Utils {
@@ -38,8 +39,8 @@ public:
     using LogPrintMap = std::unordered_map<LogLevel, LogPrintCb>;
 
 public:
-    Logger(LogLevel level, const std::string& file, int line)
-        : m_line(line), m_level(level), m_file(file) {
+    Logger(LogLevel level, std::string file, int line)
+        : m_line(line), m_level(level), m_file(std::move(file)) {
     }
 
     ~Logger() {

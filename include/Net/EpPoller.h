@@ -14,7 +14,7 @@ public:
     using WkPtr = std::weak_ptr<EpPoller>;
 
 public:
-    EpPoller(EventLoopWkPtr loop, const std::string& id);
+    explicit EpPoller(EventLoopWkPtr loop);
     ~EpPoller() override;
 
 public:

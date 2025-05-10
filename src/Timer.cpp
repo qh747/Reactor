@@ -21,7 +21,7 @@ TimerTask::TimerTask(Task cb, Timestamp expires, double intervalSec)
       m_repeat(intervalSec > 0.0) {
 }
 
-bool TimerTask::executeTask() {
+bool TimerTask::executeTask() const {
     if (nullptr == m_cb) {
         LOG_ERROR << "Execute timer task error. timer task callback invalid. id: " << m_id;
         return false;
@@ -45,7 +45,7 @@ bool TimerTask::reset() {
 /** -------------------------------- TimerQueue ------------------------------------- */
 
 TimerQueue::TimerQueue(EventLoop::WkPtr loop)
-    : m_ownerLoop(loop),
+    : m_ownerLoop(std::move(loop)),
       m_timerChannel(nullptr),
       m_isHandleTask(false) {
     LOG_DEBUG << "Timer queue construct. thread id: " << std::this_thread::get_id();
@@ -61,7 +61,7 @@ TimerQueue::~TimerQueue() {
     ::close(m_timerChannel->getFd());
 }
 
-bool TimerQueue::addTimerTask(TimerId& id, TimerTask::Task cb, Timestamp expires, double intervalSec) {
+bool TimerQueue::addTimerTask(TimerId& id, const TimerTask::Task& cb, Timestamp expires, double intervalSec) {
     auto threadId = std::this_thread::get_id();
     if (nullptr == cb) {
         LOG_ERROR << "Add timer task error. timer task callback invalid. thread id: " << threadId;
@@ -230,13 +230,12 @@ bool TimerQueue::getExpiredTasks(Timestamp expired, TimerTasks& expiredTasks) {
     }
 }
 
-bool TimerQueue::resetExpiredTimerTask() {
+bool TimerQueue::resetExpiredTimerTask() const {
     auto nextExpired = m_timerTasks.begin()->get()->getExpires();
     auto nextExpireDuration = std::chrono::duration_cast<std::chrono::system_clock::duration>(nextExpired - std::chrono::system_clock::now());
     auto nextExpiredMs = std::chrono::duration_cast<std::chrono::milliseconds>(nextExpireDuration);
 
-    itimerspec spec;
-    memset (&spec, 0, sizeof(spec));
+    itimerspec spec = {};
     spec.it_value.tv_sec = nextExpiredMs.count() / 1000;
     spec.it_value.tv_nsec = (nextExpiredMs.count() % 1000) * 1000000;
     if (::timerfd_settime(m_timerChannel->getFd(), 0, &spec, nullptr) < 0) {

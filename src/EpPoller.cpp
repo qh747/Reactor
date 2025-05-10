@@ -10,15 +10,15 @@ using namespace Utils;
 
 namespace Net {
 
-EpPoller::EpPoller(EventLoop::WkPtr loop, const std::string& id)
-    : Poller(std::move(loop), id),
+EpPoller::EpPoller(EventLoop::WkPtr loop)
+    : Poller(std::move(loop)),
       m_epollFd(epoll_create1(EPOLL_CLOEXEC)),
       m_epollEventList(POLL_INIT_WAIT_EVENTS_SIZE) {
     // 创建失败，程序退出
     if (m_epollFd < 0) {
-        LOG_FATAL << "Construct epoll poller error. id: " << id << " code: " << errno << ". msg: " << strerror(errno);
+        LOG_FATAL << "Construct epoll poller error. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
     }
-    LOG_DEBUG << "Epoll poller construct. id: " << id;
+    LOG_DEBUG << "Epoll poller construct. id: " << m_id;
 }
 
 EpPoller::~EpPoller() {
@@ -27,9 +27,10 @@ EpPoller::~EpPoller() {
 }
 
 Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
-    int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(), static_cast<int>(m_epollEventList.size()), timeoutMs);
-    auto now = std::chrono::system_clock::now();
+    int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(), 
+        static_cast<int>(m_epollEventList.size()), timeoutMs);
 
+    auto now = std::chrono::system_clock::now();
     if (activeEventSize < 0) {
         if (errno == EINTR) {
             // 外部中断

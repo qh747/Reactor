@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "Utils/Logger.h"
 #include "Net/EventLoop.h"
 #include "Thread/EventLoopThread.h"
@@ -6,7 +8,7 @@ namespace Thread {
 
 EventLoopThread::EventLoopThread(ThreadInitCb cb)
     : m_thread(nullptr),
-      m_threadInitCb(cb),
+      m_threadInitCb(std::move(cb)),
       m_threadStartFlag(false),
       m_threadExitFlag(false) {
 }
@@ -17,11 +19,11 @@ EventLoopThread::~EventLoopThread() {
     }
 }
 
-bool EventLoopThread::run() {
+void EventLoopThread::run() {
     // 校验线程是否重复运行
     if (m_threadStartFlag) {
         LOG_WARN << "Event loop thread run warning. thread is already running. thread id: " << m_threadId;
-        return true;
+        return;
     }
     else {
         m_threadStartFlag = true;
@@ -62,15 +64,14 @@ bool EventLoopThread::run() {
     });
 
     m_threadId = m_thread->get_id();
-    LOG_INFO << "Event loop thread runnning. thread id: " << m_threadId;
-    return true;
+    LOG_INFO << "Event loop thread running. thread id: " << m_threadId;
 }
 
-bool EventLoopThread::quit() {
+void EventLoopThread::quit() {
     // 校验线程是否已经退出
     if (m_threadExitFlag) {
         LOG_WARN << "Event loop thread quit warning. thread is already quit. thread id: " << m_threadId;
-        return true;
+        return;
     }
     else {
         m_threadExitFlag = true;
@@ -96,7 +97,6 @@ bool EventLoopThread::quit() {
     }
 
     LOG_INFO << "Event loop thread stopped. thread id: " << m_threadId;
-    return true;
 }
 
 } // namespace Thread

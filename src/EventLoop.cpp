@@ -1,7 +1,5 @@
-#include <random>
 #include <cstdint>
 #include <cstring>
-#include <unordered_set>
 #include <unistd.h>
 #include <sys/eventfd.h>
 #include "Common/ConfigDef.h"
@@ -15,79 +13,6 @@ using namespace Common;
 using namespace Factory;
 
 namespace Net {
-
-/** --------------------------  EventLoopIdGenerator ----------------------------------- */
-
-/**
- * @brief 事件循环Id生成器
- */
-class EventLoopIdGenerator : public NoncopyableConstructable {
-public:
-    /**
-     * @brief  生成id
-     * @return id
-     * @param  prefix id前缀
-     */
-    static std::string GenerateId(const std::string& prefix) {
-        std::lock_guard<std::mutex> lock(Mutex);
-
-        int generateCount = 0;
-        while (true) {
-            if (generateCount++ >= 3) {
-                LOG_FATAL << "Generate unique id error. generate conflict id more than 3 times.";
-                break;
-            }
-
-            std::string id = prefix + "_" + GetRandom(32) + "_" + GetIdKey();
-            if (IdSet.end() == IdSet.find(id)) {
-                IdSet.insert(id);
-                return id;
-            }
-        }
-
-        return "";
-    }
-
-private:
-    static std::string GetRandom(std::size_t length) {
-        const std::string charset = 
-            "0123456789"
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "abcdefghijklmnopqrstuvwxyz";
-    
-        std::random_device rd;
-        std::mt19937 generator(rd());
-        std::uniform_int_distribution<> distribution(0, charset.size() - 1);
-        
-        std::string result;
-        result.reserve(length);
-        
-        for (size_t i = 0; i < length; ++i) {
-            result += charset[distribution(generator)];
-        }
-
-        return result;
-    }
-
-    static std::string GetIdKey() {
-        if (IdKey.load() >= UINT64_MAX) {
-            IdKey.store(0);
-        }
-
-        return std::to_string(IdKey++);
-    }
-
-private:
-    static std::mutex Mutex;
-    static std::atomic<uint64_t> IdKey;
-    static std::unordered_set<std::string> IdSet;
-};
-
-std::mutex EventLoopIdGenerator::Mutex;
-std::atomic<uint64_t> EventLoopIdGenerator::IdKey {0};
-std::unordered_set<std::string> EventLoopIdGenerator::IdSet;
-
-/** --------------------------  EventLoop ----------------------------------- */
 
 EventLoop::EventLoop(std::thread::id threadId) 
     : m_threadId(threadId), 
@@ -130,8 +55,7 @@ bool EventLoop::init() {
         m_timerQueue = std::make_shared<TimerQueue>(this->weak_from_this());
 
         // 创建I/O多路复用封装对象
-        m_poller = PollerFactory::CreatePoller(POLLER_DEFAULT_TYPE, this->weak_from_this(), 
-        EventLoopIdGenerator::GenerateId("EVENT_LOOP_POLLER_"));
+        m_poller = PollerFactory::CreatePoller(POLLER_DEFAULT_TYPE, this->weak_from_this());
 
         if (nullptr == m_poller) {
             LOG_ERROR << "Eventloop init error. create poller failed. thread id: " << m_threadId;

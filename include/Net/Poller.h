@@ -18,7 +18,7 @@ public:
     using WkPtr = std::weak_ptr<Poller>;
 
 public:
-    Poller(EventLoopWkPtr loop, const std::string& id);
+    explicit Poller(EventLoopWkPtr loop);
     virtual ~Poller() = default;
 
 public:
@@ -45,14 +45,14 @@ public:
      */
     virtual bool removeChannel(ChannelPtr channel) = 0;
 
+public:
     /**
      * @brief  判断channel是否存在
      * @return 判断结果
      * @param  channel 需要判断的channel
      */
-    virtual bool hasChannel(const ChannelPtr& channel) const;
+    bool hasChannel(const ChannelPtr& channel) const;
 
-public:
     /**
      * @brief  获取poller id
      * @return poller id

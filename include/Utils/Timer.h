@@ -42,7 +42,7 @@ public:
      * @brief  执行定时器任务
      * @return 执行结果
      */
-    bool executeTask();
+    bool executeTask() const;
 
     /**
      * @brief  定时器超时时间重置
@@ -119,7 +119,7 @@ public:
      * @param  expires 定时器到期时间
      * @param  intervalSec 定时器任务间隔(单位: 秒)
      */
-    bool addTimerTask(TimerId& id, TimerTask::Task cb, Timestamp expires, double intervalSec = 0);
+    bool addTimerTask(TimerId& id, const TimerTask::Task& cb, Timestamp expires, double intervalSec = 0);
     
     /**
      * @brief  删除定时器任务
@@ -153,7 +153,7 @@ private:
      * @brief  重置定时器任务
      * @return 重置结果
      */
-    bool resetExpiredTimerTask();
+    bool resetExpiredTimerTask() const;
 
 private:
     // 定时器队列所属的事件循环

@@ -61,10 +61,10 @@ bool EventLoopThreadPool::getNextWorkEventLoop(Net::EventLoopWkPtr& eventLoop) c
     }
 
     // 获取有效工作线程索引
-    auto validNextIdx = (m_nextIdx >= m_eventLoopWorkThreads.size() ? 0 : m_nextIdx++);
+    m_nextIdx = (m_nextIdx >= (m_eventLoopWorkThreads.size() - 1) ? 0 : m_nextIdx + 1);
 
     // 获取工作线程
-    auto eventLoopWorkThread = m_eventLoopWorkThreads[validNextIdx];
+    auto eventLoopWorkThread = m_eventLoopWorkThreads[m_nextIdx];
     if (nullptr == eventLoopWorkThread) {
         LOG_ERROR << "Get next work event loop error. work thread invalid. id" << m_id;
         return false;

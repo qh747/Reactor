@@ -57,4 +57,12 @@ typedef enum class PollerControlType : int {
     PollerRemove = 3,
 } PollerCtrl_t;
 
+/**
+ * @brief socket类型
+ */
+typedef enum class SocketType : int {
+    SocketTCP = 1,
+    SocketUDP = 2,
+} Socket_t;
+
 }; // namespace Common

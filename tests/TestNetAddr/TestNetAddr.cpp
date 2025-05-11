@@ -4,13 +4,13 @@
 #include <iostream>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <Net/NetAddr.h>
-using namespace Net;
+#include <Utils/Address.h>
+using namespace Utils;
 
 void FuncTestFst() {
     std::cout << "NET ADDRESS TEST FIRST -----------------------------" << std::endl;
 
-    InetAddrV4 addr("127.0.0.1", 90);
+    IPv4Address addr("127.0.0.1", 90);
 
     std::string ip;
     addr.getIpAddr(ip);
@@ -24,7 +24,7 @@ void FuncTestSnd() {
     std::cout << "NET ADDRESS TEST SECOND -----------------------------" << std::endl;
 
     try {
-        InetAddrV4 addr("256.0.0.1", 90);
+        IPv4Address addr("256.0.0.1", 90);
     } catch (const std::exception& e) {
         std::cout << "catch exception: " << e.what() << std::endl;
     }
@@ -43,7 +43,7 @@ void FuncTestTrd() {
 
     addr.sin_port = htons(9091);
 
-    InetAddrV4 addrV4(addr);
+    IPv4Address addrV4(addr);
 
     std::string ip;
     addrV4.getIpAddr(ip);

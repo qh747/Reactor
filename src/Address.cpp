@@ -3,12 +3,12 @@
 #include <stdexcept>
 #include <arpa/inet.h>
 #include "Utils/Logger.h"
-#include "Net/NetAddr.h"
+#include "Utils/Address.h"
 using namespace Utils;
 
-namespace Net {
+namespace Utils {
 
-InetAddrV4::InetAddrV4(const std::string& ip, uint16_t port) : m_addr() {
+IPv4Address::IPv4Address(const std::string& ip, uint16_t port) : m_addr() {
     if (ip.empty() || 0 == port) {
         throw std::runtime_error("Invalid input param");
     }
@@ -22,19 +22,19 @@ InetAddrV4::InetAddrV4(const std::string& ip, uint16_t port) : m_addr() {
 
     m_addr.sin_port = htons(port);
 
-    if (!this->InetAddrV4::valid()) {
+    if (!this->IPv4Address::valid()) {
         throw std::runtime_error("Invalid socket address");
     }
 }
 
-InetAddrV4::InetAddrV4(const sockaddr_in& addr)
+IPv4Address::IPv4Address(const sockaddr_in& addr)
     : m_addr(addr) {
-    if (!this->InetAddrV4::valid()) {
+    if (!this->IPv4Address::valid()) {
         throw std::runtime_error("Invalid socket address");
     }
 }
 
-bool InetAddrV4::getSockAddr(sockaddr_in& addr) const {
+bool IPv4Address::getSockAddr(sockaddr_in& addr) const {
     if (!this->valid()) {
         LOG_ERROR << "Get socket address error. invalid address";
         return false;
@@ -44,7 +44,7 @@ bool InetAddrV4::getSockAddr(sockaddr_in& addr) const {
     return true;
 }
 
-bool InetAddrV4::getIpAddr(std::string& ip) const {
+bool IPv4Address::getIpAddr(std::string& ip) const {
     if (!this->valid()) {
         LOG_ERROR << "Get ip address error. invalid address";
         return false;
@@ -60,7 +60,7 @@ bool InetAddrV4::getIpAddr(std::string& ip) const {
     return true;
 }
 
-bool InetAddrV4::getPort(uint16_t& port) const {
+bool IPv4Address::getPort(uint16_t& port) const {
     if (!this->valid()) {
         LOG_ERROR << "Get port error. invalid address";
         return false;
@@ -70,7 +70,7 @@ bool InetAddrV4::getPort(uint16_t& port) const {
     return true;
 }
 
-bool InetAddrV4::valid() const {
+bool IPv4Address::valid() const {
     if (AF_INET != m_addr.sin_family) {
         return false;
     }
@@ -87,4 +87,4 @@ bool InetAddrV4::valid() const {
     return true;
 }
 
-} // namespace Net
+} // namespace Utils

@@ -1,9 +1,10 @@
 #pragma once
+#include <memory>
 #include <string>
 #include <cstdint>
 #include <netinet/in.h>
 
-namespace Net {
+namespace Utils {
 
 /**
  * @brief 网络地址类型
@@ -16,9 +17,13 @@ enum class AddrType {
 /**
  * @brief 网络地址基类
  */
-class InetAddr {
+class Address : public std::enable_shared_from_this<Address> {
 public:
-    virtual ~InetAddr() = default;
+    using Ptr = std::shared_ptr<Address>;
+    using WPtr = std::weak_ptr<Address>;
+
+public:
+    virtual ~Address() = default;
 
 public:
     /**
@@ -58,11 +63,15 @@ public:
 /**
  * @brief IPv4网络地址类
  */
-class InetAddrV4 : public InetAddr {
+class IPv4Address : public Address {
 public:
-    explicit InetAddrV4(const std::string& ip, uint16_t port);
-    explicit InetAddrV4(const sockaddr_in& addr);
-    ~InetAddrV4() override = default;
+    using Ptr = std::shared_ptr<IPv4Address>;
+    using WPtr = std::weak_ptr<IPv4Address>;
+
+public:
+    explicit IPv4Address(const std::string& ip, uint16_t port);
+    explicit IPv4Address(const sockaddr_in& addr);
+    ~IPv4Address() override = default;
 
 public:
     /**
@@ -105,4 +114,4 @@ private:
     sockaddr_in m_addr;
 };
 
-}; // namespace Net
+}; // namespace Utils

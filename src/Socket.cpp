@@ -1,7 +1,5 @@
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/tcp.h>
 #include "Utils/Logger.h"
+#include "Utils/Socketop.h"
 #include "Net/Socket.h"
 
 namespace Net {
@@ -13,7 +11,7 @@ Socket::Socket(int fd, const Socket_t& type)
 }
 
 Socket::~Socket() {
-    ::close(m_fd);
+    Socketop::CloseSocket(m_fd);
 }
 
 bool Socket::bind(const Address::Ptr& addr) {
@@ -23,29 +21,15 @@ bool Socket::bind(const Address::Ptr& addr) {
         return false;
     }
 
-    std::string ipAddr;
-    addr->getIpAddr(ipAddr);
-
-    uint16_t port;
-    addr->getPort(port);
-
     // socket地址已绑定
     if (this->isLocalAddrValid()) {
-        std::string oldIpAddr;
-        m_localAddr->getIpAddr(oldIpAddr);
-
-        uint16_t oldPort;
-        m_localAddr->getPort(oldPort);
-
-        LOG_WARN << "Socket bind address warning. address already bound. new ip addr: " << ipAddr << " port: " << port
-                 << " old ip addr: " << oldIpAddr << " port: " << oldPort;
+        LOG_WARN << "Socket bind address warning. address already bound. new addr: " << addr->printIpPort()
+                 << " old addr: " << m_localAddr->printIpPort();
         return true;
     }
 
-    sockaddr_in sockAddr = {};
-    addr->getSockAddr(sockAddr);
-    if (::bind(m_fd, reinterpret_cast<const sockaddr*>(&sockAddr), static_cast<socklen_t>(sizeof(struct sockaddr_in))) < 0) {
-        LOG_ERROR << "Socket bind address error. ip addr: " << ipAddr << " port: " << port;
+    if (!Socketop::BindSocket(m_fd, addr)) {
+        LOG_ERROR << "Socket bind address error. addr: " << addr->printIpPort();
         return false;
     }
 
@@ -59,86 +43,72 @@ bool Socket::listen() const {
         return false;
     }
 
-    if (::listen(m_fd, SOMAXCONN) < 0) {
-        std::string ipAddr;
-        m_localAddr->getIpAddr(ipAddr);
-
-        uint16_t port;
-        m_localAddr->getPort(port);
-
-        LOG_ERROR << "Socket listen error. ip addr: " << ipAddr << " port: " << port;
+    if (!Socketop::ListenSocket(m_fd)) {
+        LOG_ERROR << "Socket listen error. addr: " << m_localAddr->printIpPort();
         return false;
     }
     return true;
 }
 
-void Socket::setReuseAddr(bool enabled) const {
-    int optval = enabled ? 1 : 0;
-    ::setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
-}
-
-void Socket::setReusePort(bool enabled) const {
-#ifdef SO_REUSEPORT
-    int optval = enabled ? 1 : 0;
-    ::setsockopt(m_fd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
-#endif
-}
-
-/** ---------------------------------------------- TcpSocket ------------------------------------------------------ */
-
-TcpSocket::TcpSocket(int fd)
-    : Socket(fd, Socket_t::SocketTCP) {
-}
-
-bool TcpSocket::accept(Socket::Ptr& peerSock) const {
+bool Socket::accept(Socket::Ptr& peerSock) const {
     if (!this->isLocalAddrValid()) {
         LOG_ERROR << "Socket accept error. local address not set.";
         return false;
     }
-
-    sockaddr_in sockAddr = {};
-    if (!m_localAddr->getSockAddr(sockAddr)) {
-        LOG_ERROR << "Socket accept error. invalid local address.";
+    else if (Socket_t::TCP != m_type) {
+        LOG_ERROR << "Socket accept error. invalid socket type.";
         return false;
     }
 
-    socklen_t sockLen = sizeof(sockAddr);
-    int fd = ::accept(m_fd, reinterpret_cast<sockaddr*>(&sockAddr), &sockLen);
-    if (fd < 0) {
-        std::string ipAddr;
-        m_localAddr->getIpAddr(ipAddr);
-
-        uint16_t port;
-        m_localAddr->getPort(port);
-
-        LOG_ERROR << "Socket accept error. ip addr: " << ipAddr << " port: " << port;
+    int connfd = -1;
+    if (!Socketop::AcceptSocket(m_fd, m_localAddr, connfd)) {
+        LOG_ERROR << "Socket accept error. addr: " << m_localAddr->printIpPort();
         return false;
     }
 
-    peerSock = std::make_shared<Socket>(fd, m_type);
+    peerSock = std::make_shared<Socket>(connfd, m_type);
+
+    std::string localIpAddr;
+    uint16_t localPort;
+    if (!Socketop::GetLocalIpAddrPort(connfd, localIpAddr, localPort)) {
+        LOG_ERROR << "Socket accept error. get local ip addr and port failed. addr: " << m_localAddr->printIpPort();
+        Socketop::CloseSocket(connfd);
+        return false;
+    }
+
+    std::string peerIpAddr;
+    uint16_t peerPort;
+    if (!Socketop::GetRemoteIpAddrPort(connfd, peerIpAddr, peerPort)) {
+        LOG_ERROR << "Socket accept error. get peer ip addr and port failed. addr: " << m_localAddr->printIpPort();
+        Socketop::CloseSocket(connfd);
+        return false;
+    }
+
+    Addr_t addrType;
+    if (!Socketop::GetSocketFamilyType(connfd, addrType)) {
+        LOG_ERROR << "Socket accept error. get address type failed. addr: " << m_localAddr->printIpPort();
+        Socketop::CloseSocket(connfd);
+        return false;
+    }
+
+    if (Addr_t::IPv4 == addrType) {
+        peerSock->m_peerAddr = std::make_shared<IPv4Address>(localIpAddr, localPort);
+    }
+    else if (Addr_t::IPv6 == addrType) {
+        peerSock->m_peerAddr = std::make_shared<IPv6Address>(localIpAddr, localPort);
+    }
+
     return true;
 }
 
-bool TcpSocket::connect(const Address::Ptr& peerAddr) {
+bool Socket::connect(const Address::Ptr& peerAddr) {
     if (nullptr == peerAddr || !peerAddr->valid()) {
         LOG_ERROR << "Socket connect error. invalid peer address.";
         return false;
     }
 
-    sockaddr_in sockAddr = {};
-    if (!peerAddr->getSockAddr(sockAddr)) {
-        LOG_ERROR << "Socket connect error. invalid peer address.";
-        return false;
-    }
-
-    socklen_t sockLen = sizeof(sockAddr);
-    if (::connect(m_fd, reinterpret_cast<const sockaddr*>(&sockAddr), sockLen) < 0) {
-        std::string ipAddr;
-        peerAddr->getIpAddr(ipAddr);
-
-        uint16_t port;
-        peerAddr->getPort(port);
-        LOG_ERROR << "Socket connect error. remote ip addr: " << ipAddr << " port: " << port;
+    if (!Socketop::ConnectSocket(m_fd, peerAddr)) {
+        LOG_ERROR << "Socket connect error. remote addr: " << peerAddr->printIpPort();
         return false;
     }
 
@@ -146,51 +116,55 @@ bool TcpSocket::connect(const Address::Ptr& peerAddr) {
     return true;
 }
 
-void TcpSocket::shutdown(int how) const {
-    ::shutdown(m_fd, how);
+void Socket::setReuseAddr(bool enabled) const {
+    if (!Socketop::SetReuseAddr(m_fd, enabled)) {
+        LOG_ERROR << "Socket set reuse addr error. fd: " << m_fd;
+    }
 }
 
-void TcpSocket::setNoDelayEnabled(bool enabled) const {
-    int optval = enabled ? 1 : 0;
-    ::setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY, &optval, static_cast<socklen_t>(sizeof(optval)));
+bool Socket::getReuseAddr() const {
+    return Socketop::IsReuseAddr(m_fd);
 }
 
-void TcpSocket::setKeepaliveEnabled(bool enabled) const {
-    int optval = enabled ? 1 : 0;
-    ::setsockopt(m_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, static_cast<socklen_t>(sizeof optval));
+void Socket::setReusePort(bool enabled) const {
+    if (!Socketop::SetReusePort(m_fd, enabled)) {
+        LOG_ERROR << "Socket set reuse port error. fd: " << m_fd;
+    }
 }
 
-/** ---------------------------------------------- UdpSocket ------------------------------------------------------ */
-
-UdpSocket::UdpSocket(int fd)
-    : Socket(fd, Socket_t::SocketUDP) {
+bool Socket::getReusePort() const {
+    return Socketop::IsReusePort(m_fd);
 }
 
-bool UdpSocket::bindRemoteSock(const Address::Ptr& peerAddr) {
-    if (nullptr == peerAddr || !peerAddr->valid()) {
-        LOG_ERROR << "Socket bind remote address error. invalid peer address.";
-        return false;
+void Socket::shutdown(SocketShutdown_t type) const {
+    if (Socket_t::TCP != m_type) {
+        LOG_ERROR << "Socket shutdown error. invalid socket type. fd: " << m_fd;
+    }
+    else if (!Socketop::ShutdownSocket(m_fd, type)) {
+        LOG_ERROR << "Socket shutdown error. fd: " << m_fd;
+    }
+}
+
+void Socket::setNoDelayEnabled(bool enabled) const {
+    if (Socket_t::TCP != m_type) {
+        LOG_ERROR << "Socket set no delay enabled error. invalid socket type. fd: " << m_fd;
+        return;
     }
 
-    sockaddr_in sockAddr = {};
-    if (!peerAddr->getSockAddr(sockAddr)) {
-        LOG_ERROR << "Socket bind remote address error. invalid peer address.";
-        return false;
+    if (!Socketop::SetNodelay(m_fd, enabled)) {
+        LOG_ERROR << "Socket set no delay enabled error. fd: " << m_fd;
+    }
+}
+
+void Socket::setKeepaliveEnabled(bool enabled) const {
+    if (Socket_t::TCP != m_type) {
+        LOG_ERROR << "Socket set keepalive enabled error. invalid socket type. fd: " << m_fd;
+        return;
     }
 
-    socklen_t sockLen = sizeof(sockAddr);
-    if (::connect(m_fd, reinterpret_cast<const sockaddr*>(&sockAddr), sockLen) < 0) {
-        std::string ipAddr;
-        peerAddr->getIpAddr(ipAddr);
-
-        uint16_t port;
-        peerAddr->getPort(port);
-        LOG_ERROR << "Socket bind remote address error. remote ip addr: " << ipAddr << " port: " << port;
-        return false;
+    if (!Socketop::SetKeepalive(m_fd, enabled)) {
+        LOG_ERROR << "Socket set keepalive enabled error. fd: " << m_fd;
     }
-
-    m_peerAddr = peerAddr;
-    return true;
 }
 
 } // namespace Net

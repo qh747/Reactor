@@ -1,5 +1,6 @@
 #pragma once
 #include <sys/poll.h>
+#include <sys/socket.h>
 
 namespace Common {
 
@@ -27,7 +28,8 @@ typedef enum class EventType : int {
     EvTypeReadWriteError = EvTypeReadWrite | EvTypeError,
     EvTypeReadCloseError = EvTypeReadClose | EvTypeError,
     EvTypeWriteCloseError = EvTypeWriteClose | EvTypeError,
-    EvTypeAll = EvTypeRead | EvTypeWrite | EvTypeClose | EvTypeError,
+    EvTypeAll = EvTypeRead | EvTypeWrite | EvTypeClose | EvTypeError
+
 } Event_t;
 
 /**
@@ -37,6 +39,7 @@ typedef enum class StateType : int {
     StatePending = -1,
     StateInLoop = 0,
     StateNotInLoop = 1
+
 } State_t;
 
 /**
@@ -44,7 +47,8 @@ typedef enum class StateType : int {
  */
 typedef enum class PollerType : int {
     PollerPoll = 0,
-    PollerEpoll = 1,
+    PollerEpoll = 1
+
 } Poller_t;
 
 /**
@@ -54,15 +58,36 @@ typedef enum class PollerType : int {
 typedef enum class PollerControlType : int {
     PollerAdd = 1,
     PollerModify = 2,
-    PollerRemove = 3,
+    PollerRemove = 3
+
 } PollerCtrl_t;
+
+/**
+ * @brief 网络地址类型
+ */
+typedef enum class AddrType : int {
+    IPv4 = AF_INET,
+    IPv6 = AF_INET6
+
+} Addr_t;
 
 /**
  * @brief socket类型
  */
 typedef enum class SocketType : int {
-    SocketTCP = 1,
-    SocketUDP = 2,
+    TCP = SOCK_STREAM,
+    UDP = SOCK_DGRAM
+
 } Socket_t;
+
+/**
+ * @brief socket关闭类型
+ */
+typedef enum class SocketShutdownType : int {
+    ShutdownRead = SHUT_RD,
+    ShutdownWrite = SHUT_WR,
+    ShutdownReadWrite = SHUT_RDWR
+
+} SocketShutdown_t;
 
 }; // namespace Common

@@ -36,12 +36,12 @@ void FuncTestTrd() {
 
     addr.sin_family = AF_INET;
 
-    if (inet_pton(AF_INET, "192.168.3.10", &addr.sin_addr) <= 0) {
+    if (::inet_pton(AF_INET, "192.168.3.10", &addr.sin_addr) <= 0) {
         std::cerr << "Invalid ip address" << std::endl;
         return;
     }
 
-    addr.sin_port = htons(9091);
+    addr.sin_port = ::htons(9091);
 
     IPv4Address addrV4(addr);
 

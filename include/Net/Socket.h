@@ -18,7 +18,7 @@ public:
 
 public:
     Socket(int fd, const Socket_t& type);
-    virtual ~Socket();
+    ~Socket();
 
 public:
     /**
@@ -35,16 +35,36 @@ public:
     bool listen() const;
 
     /**
+     * @note   仅client socket使用
+     * @brief  连接
+     * @return 连接结果
+     * @param  peerAddr 对端地址
+     */
+    bool connect(const Address::Ptr& peerAddr);
+
+    /**
      * @brief 复用地址
      * @param enabled 是否启用
      */
     void setReuseAddr(bool enabled) const;
 
     /**
+     * @brief 是否复用地址
+     * @param enabled 判断结果
+     */
+    bool getReuseAddr() const;
+
+    /**
      * @brief 复用端口
      * @param enabled 是否启用
      */
     void setReusePort(bool enabled) const;
+
+    /**
+     * @brief 是否复用端口
+     * @param enabled 判断结果
+     */
+    bool getReusePort() const;
 
 public:
     /**
@@ -127,7 +147,37 @@ public:
         return port;
     }
 
-protected:
+public:
+    /**
+     * @note   仅server socket使用
+     * @brief  接受连接
+     * @return 接受结果
+     * @param  peerSock 对端socket
+     */
+    bool accept(Socket::Ptr& peerSock) const;
+
+    /**
+     * @note  仅tcp socket使用
+     * @brief 关闭socket
+     * @param type 关闭类型
+     */
+    void shutdown(SocketShutdown_t type) const;
+
+    /**
+     * @note  仅tcp socket使用
+     * @brief 设置是否启用nagle算法
+     * @param enabled 是否启用
+     */
+    void setNoDelayEnabled(bool enabled) const;
+
+    /**
+     * @note  仅tcp socket使用
+     * @brief 设置是否启用心跳机制
+     * @param enabled 是否启用
+     */
+    void setKeepaliveEnabled(bool enabled) const;
+
+private:
     // socket fd
     const int m_fd;
 
@@ -139,73 +189,6 @@ protected:
 
     // socket peer address
     Address::Ptr m_peerAddr;
-};
-
-/**
- * @brief TcpSocket封装类
- */
-class TcpSocket : public Socket {
-public:
-    using Ptr = std::shared_ptr<TcpSocket>;
-    using WPtr = std::weak_ptr<TcpSocket>;
-
-public:
-    explicit TcpSocket(int fd);
-    ~TcpSocket() override = default;
-
-public:
-    /**
-     * @brief  接受连接
-     * @return 接受结果
-     * @param  peerSock 对端socket
-     */
-    bool accept(Socket::Ptr& peerSock) const;
-
-    /**
-     * @brief  连接
-     * @return 连接结果
-     * @param  peerAddr 对端地址
-     */
-    bool connect(const Address::Ptr& peerAddr);
-
-    /**
-     * @brief 关闭socket
-     * @param how 关闭方式，关闭读写 - SHUT_RDWR，关闭读 - SHUT_RD，关闭写 - SHUT_WR
-     */
-    void shutdown(int how = SHUT_RDWR) const;
-
-    /**
-     * @brief 设置是否启用nagle算法
-     * @param enabled 是否启用
-     */
-    void setNoDelayEnabled(bool enabled) const;
-
-    /**
-     * @brief 设置是否启用心跳机制
-     * @param enabled 是否启用
-     */
-    void setKeepaliveEnabled(bool enabled) const;
-};
-
-/**
- * @brief UdpSocket封装类
- */
-class UdpSocket : public Socket {
-public:
-    using Ptr = std::shared_ptr<UdpSocket>;
-    using WPtr = std::weak_ptr<UdpSocket>;
-
-public:
-    explicit UdpSocket(int fd);
-    ~UdpSocket() override = default;    
-
-public:
-    /**
-     * @brief  绑定对端地址
-     * @return 绑定结果
-     * @param  peerAddr 对端地址
-     */
-    bool bindRemoteSock(const Address::Ptr& peerAddr);
 };
 
 }; // namespace Net

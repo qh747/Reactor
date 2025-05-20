@@ -61,7 +61,7 @@ public:
         return m_id;
     }
 
-    /** 
+    /**
      * @brief  获取poller所属的事件循环
      * @return poller所属的事件循环
      */

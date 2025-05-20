@@ -50,7 +50,7 @@ bool Socket::listen() const {
     return true;
 }
 
-bool Socket::accept(Socket::Ptr& peerSock) const {
+bool Socket::accept(Socket::Ptr& connSock) const {
     if (!this->isLocalAddrValid()) {
         LOG_ERROR << "Socket accept error. local address not set.";
         return false;
@@ -66,7 +66,7 @@ bool Socket::accept(Socket::Ptr& peerSock) const {
         return false;
     }
 
-    peerSock = std::make_shared<Socket>(connfd, m_type);
+    connSock = std::make_shared<Socket>(connfd, m_type);
 
     std::string localIpAddr;
     uint16_t localPort;
@@ -92,10 +92,10 @@ bool Socket::accept(Socket::Ptr& peerSock) const {
     }
 
     if (Addr_t::IPv4 == addrType) {
-        peerSock->m_peerAddr = std::make_shared<IPv4Address>(localIpAddr, localPort);
+        connSock->m_peerAddr = std::make_shared<IPv4Address>(localIpAddr, localPort);
     }
     else if (Addr_t::IPv6 == addrType) {
-        peerSock->m_peerAddr = std::make_shared<IPv6Address>(localIpAddr, localPort);
+        connSock->m_peerAddr = std::make_shared<IPv6Address>(localIpAddr, localPort);
     }
 
     return true;
@@ -122,7 +122,7 @@ void Socket::setReuseAddr(bool enabled) const {
     }
 }
 
-bool Socket::getReuseAddr() const {
+bool Socket::isReuseAddr() const {
     return Socketop::IsReuseAddr(m_fd);
 }
 
@@ -132,7 +132,7 @@ void Socket::setReusePort(bool enabled) const {
     }
 }
 
-bool Socket::getReusePort() const {
+bool Socket::isReusePort() const {
     return Socketop::IsReusePort(m_fd);
 }
 

@@ -49,7 +49,7 @@ public:
      * @return 重置结果
      */
     bool reset();
-    
+
 public:
     /**
      * @brief  判断定时器任务是否重复触发
@@ -120,7 +120,7 @@ public:
      * @param  intervalSec 定时器任务间隔(单位: 秒)
      */
     bool addTimerTask(TimerId& id, const TimerTask::Task& cb, Timestamp expires, double intervalSec = 0);
-    
+
     /**
      * @brief  删除定时器任务
      * @return 删除结果

@@ -153,7 +153,7 @@ private:
 
 private:
     // 事件循环所在线程id
-    std::thread::id m_threadId; 
+    std::thread::id m_threadId;
 
     // 事件循环是否在运行
     std::atomic_bool m_running;

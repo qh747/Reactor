@@ -10,7 +10,7 @@
 namespace Utils {
 
 bool Socketop::CreateSocket(Addr_t addrType, Socket_t sockType, bool isNonblock, int& fd) {
-    int type = isNonblock ? (static_cast<int>(sockType) | SOCK_NONBLOCK) : static_cast<int>(sockType);
+    int type = isNonblock ? (static_cast<int>(sockType) | SOCK_NONBLOCK | SOCK_CLOEXEC) : static_cast<int>(sockType) | SOCK_CLOEXEC;
     int protocol = Socket_t::TCP == sockType ? IPPROTO_TCP : IPPROTO_UDP;
 
     fd = ::socket(static_cast<int>(addrType), type, protocol);
@@ -68,7 +68,8 @@ bool Socketop::AcceptSocket(int fd, const Address::Ptr& addr, int& connfd) {
     socklen_t sockLen = sizeof(sockAddr);
 
     if ((connfd = ::accept(fd, &sockAddr, &sockLen) < 0)) {
-        LOG_ERROR << "Socket accept error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);;
+        LOG_ERROR << "Socket accept error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
+        ;
         return false;
     }
     return true;
@@ -106,7 +107,7 @@ bool Socketop::ShutdownSocket(int fd, SocketShutdown_t type) {
 bool Socketop::GetSocketFamilyType(int fd, Addr_t& addrType) {
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
-    
+
     if (-1 == ::getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &len)) {
         LOG_ERROR << "Socket get family type error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
         return false;
@@ -124,7 +125,7 @@ bool Socketop::IsLocalAddrValid(int fd) {
 
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
-    
+
     if (::getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
         LOG_ERROR << "Socket check local address validity error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
         return false;
@@ -135,13 +136,13 @@ bool Socketop::IsLocalAddrValid(int fd) {
         if (ipv4Addr->sin_addr.s_addr == INADDR_ANY || ipv4Addr->sin_addr.s_addr == INADDR_LOOPBACK) {
             return false;
         }
-    } 
+    }
     else if (addr.ss_family == AF_INET6) {
         sockaddr_in6* ipv6Addr = reinterpret_cast<sockaddr_in6*>(&addr);
         if (IN6_ARE_ADDR_EQUAL(&ipv6Addr->sin6_addr, &in6addr_any) || IN6_IS_ADDR_LOOPBACK(&ipv6Addr->sin6_addr)) {
             return false;
         }
-    } 
+    }
     else {
         LOG_ERROR << "Socket check local address validity error. Unknown address family. fd: " << fd;
         return false;
@@ -164,18 +165,18 @@ bool Socketop::GetLocalIpAddr(int fd, std::string& ipAddr) {
         return false;
     }
 
-    char ip[INET6_ADDRSTRLEN]; 
+    char ip[INET6_ADDRSTRLEN];
     void* srcAddr = nullptr;
     int addrFamily = 0;
 
     if (addr.ss_family == AF_INET) {
         srcAddr = &(reinterpret_cast<sockaddr_in*>(&addr)->sin_addr);
         addrFamily = AF_INET;
-    } 
+    }
     else if (AF_INET6 == addr.ss_family) {
         srcAddr = &(reinterpret_cast<sockaddr_in6*>(&addr)->sin6_addr);
         addrFamily = AF_INET6;
-    } 
+    }
     else {
         LOG_ERROR << "Socket get local ip addr error. Unknown address family. fd: " << fd;
         return false;
@@ -198,7 +199,7 @@ bool Socketop::GetLocalPort(int fd, uint16_t& port) {
 
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
-    
+
     if (::getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
         LOG_ERROR << "Socket get local port error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
         return false;
@@ -206,10 +207,10 @@ bool Socketop::GetLocalPort(int fd, uint16_t& port) {
 
     if (AF_INET == addr.ss_family) {
         port = ::ntohs(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
-    } 
+    }
     else if (AF_INET6 == addr.ss_family) {
         port = ::ntohs(reinterpret_cast<sockaddr_in6*>(&addr)->sin6_port);
-    } 
+    }
     else {
         LOG_ERROR << "Socket get local port error. Unknown address family. fd: " << fd;
         return false;
@@ -226,13 +227,13 @@ bool Socketop::GetLocalIpAddrPort(int fd, std::string& ipAddr, uint16_t& port) {
 
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
-    
+
     if (::getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
         LOG_ERROR << "Socket get local ip addr and port error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
         return false;
     }
 
-    char ip[INET6_ADDRSTRLEN]; 
+    char ip[INET6_ADDRSTRLEN];
     void* srcAddr = nullptr;
     int addrFamily = 0;
 
@@ -240,12 +241,12 @@ bool Socketop::GetLocalIpAddrPort(int fd, std::string& ipAddr, uint16_t& port) {
         srcAddr = &reinterpret_cast<sockaddr_in*>(&addr)->sin_addr;
         addrFamily = AF_INET;
         port = ::ntohs(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
-    } 
+    }
     else if (addr.ss_family == AF_INET6) {
         srcAddr = &reinterpret_cast<sockaddr_in6*>(&addr)->sin6_addr;
         addrFamily = AF_INET6;
         port = ::ntohs(reinterpret_cast<sockaddr_in6*>(&addr)->sin6_port);
-    } 
+    }
     else {
         LOG_ERROR << "Socket get local ip addr and port error. Unknown address family. fd: " << fd;
         return false;
@@ -268,33 +269,33 @@ bool Socketop::IsRemoteAddrValid(int fd) {
 
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
-    
+
     if (::getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
-        LOG_ERROR << "Socket check remote address validity error. fd: " << fd 
+        LOG_ERROR << "Socket check remote address validity error. fd: " << fd
                   << " errno: " << errno << ". error: " << strerror(errno);
         return false;
     }
 
     if (addr.ss_family == AF_INET) {
         sockaddr_in* ipv4Addr = reinterpret_cast<sockaddr_in*>(&addr);
-        
+
         // 检查地址是否有效（非0.0.0.0且非回环地址127.0.0.1）
-        if (ipv4Addr->sin_addr.s_addr == INADDR_ANY || 
+        if (ipv4Addr->sin_addr.s_addr == INADDR_ANY ||
             ipv4Addr->sin_addr.s_addr == htonl(INADDR_LOOPBACK)) {
             return false;
         }
-        
+
         return true;
     }
     else if (addr.ss_family == AF_INET6) {
         sockaddr_in6* ipv6Addr = reinterpret_cast<sockaddr_in6*>(&addr);
-        
+
         // 检查地址是否有效（非::且非::1）
-        if (IN6_IS_ADDR_UNSPECIFIED(&ipv6Addr->sin6_addr) || 
+        if (IN6_IS_ADDR_UNSPECIFIED(&ipv6Addr->sin6_addr) ||
             IN6_IS_ADDR_LOOPBACK(&ipv6Addr->sin6_addr)) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -311,7 +312,7 @@ bool Socketop::GetRemoteIpAddr(int fd, std::string& ipAddr) {
 
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
-    
+
     if (::getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
         LOG_ERROR << "Socket get remote ip addr error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
         return false;
@@ -324,11 +325,11 @@ bool Socketop::GetRemoteIpAddr(int fd, std::string& ipAddr) {
     if (addr.ss_family == AF_INET) {
         srcAddr = &reinterpret_cast<sockaddr_in*>(&addr)->sin_addr;
         addrFamily = AF_INET;
-    } 
+    }
     else if (addr.ss_family == AF_INET6) {
         srcAddr = &reinterpret_cast<sockaddr_in6*>(&addr)->sin6_addr;
         addrFamily = AF_INET6;
-    } 
+    }
     else {
         LOG_ERROR << "Socket get remote ip addr error. Unknown address family. fd: " << fd;
         return false;
@@ -351,7 +352,7 @@ bool Socketop::GetRemotePort(int fd, uint16_t& port) {
 
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
-    
+
     if (::getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
         LOG_ERROR << "Socket get remote port error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
         return false;
@@ -359,10 +360,10 @@ bool Socketop::GetRemotePort(int fd, uint16_t& port) {
 
     if (addr.ss_family == AF_INET) {
         port = ::ntohs(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
-    } 
+    }
     else if (addr.ss_family == AF_INET6) {
         port = ::ntohs(reinterpret_cast<sockaddr_in6*>(&addr)->sin6_port);
-    } 
+    }
     else {
         LOG_ERROR << "Socket get remote port error. Unknown address family. fd: " << fd;
         return false;
@@ -379,7 +380,7 @@ bool Socketop::GetRemoteIpAddrPort(int fd, std::string& ipAddr, uint16_t& port) 
 
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
-    
+
     if (::getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
         LOG_ERROR << "Socket get remote ip addr and port error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
         return false;
@@ -393,12 +394,12 @@ bool Socketop::GetRemoteIpAddrPort(int fd, std::string& ipAddr, uint16_t& port) 
         srcAddr = &reinterpret_cast<sockaddr_in*>(&addr)->sin_addr;
         addrFamily = AF_INET;
         port = ::ntohs(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
-    } 
+    }
     else if (addr.ss_family == AF_INET6) {
         srcAddr = &reinterpret_cast<sockaddr_in6*>(&addr)->sin6_addr;
         addrFamily = AF_INET6;
         port = ::ntohs(reinterpret_cast<sockaddr_in6*>(&addr)->sin6_port);
-    } 
+    }
     else {
         LOG_ERROR << "Socket get remote ip addr and port error. Unknown address family. fd: " << fd;
         return false;

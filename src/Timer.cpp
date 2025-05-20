@@ -11,13 +11,13 @@ namespace Utils {
 
 /** -------------------------------- TimerTask ------------------------------------- */
 
-static std::atomic<uint64_t> TimerIdCounter {0};
+static std::atomic<uint64_t> TimerIdCounter{0};
 
-TimerTask::TimerTask(Task cb, Timestamp expires, double intervalSec) 
+TimerTask::TimerTask(Task cb, Timestamp expires, double intervalSec)
     : m_id(TimerIdCounter++),
       m_cb(std::move(cb)),
-      m_expires(expires), 
-      m_intervalSec(intervalSec), 
+      m_expires(expires),
+      m_intervalSec(intervalSec),
       m_repeat(intervalSec > 0.0) {
 }
 
@@ -86,8 +86,7 @@ bool TimerQueue::addTimerTask(TimerId& id, const TimerTask::Task& cb, Timestamp 
 
         // 判断是否需要重置定时器的超时时间
         auto strongSelf = weakSelf.lock();
-        auto resetFlag = strongSelf->m_timerTasks.empty() ? true : 
-            (strongSelf->m_timerTasks.begin()->get()->getExpires() < task->getExpires() ? true : false);
+        auto resetFlag = strongSelf->m_timerTasks.empty() ? true : (strongSelf->m_timerTasks.begin()->get()->getExpires() < task->getExpires() ? true : false);
 
         // 添加定时器任务
         strongSelf->m_timerTasks.insert(task);
@@ -100,7 +99,7 @@ bool TimerQueue::addTimerTask(TimerId& id, const TimerTask::Task& cb, Timestamp 
 
     return true;
 }
-    
+
 bool TimerQueue::delTimerTask(TimerId id) {
     auto threadId = std::this_thread::get_id();
 
@@ -137,7 +136,7 @@ bool TimerQueue::delTimerTask(TimerId id) {
 bool TimerQueue::init() {
     // 防止重复初始化
     if (nullptr != m_timerChannel) {
-        LOG_WARN << "Timer queue init warning. Timer channel already exist. fd: " << m_timerChannel->getFd() 
+        LOG_WARN << "Timer queue init warning. Timer channel already exist. fd: " << m_timerChannel->getFd()
                  << " thread id: " << std::this_thread::get_id();
         return true;
     }
@@ -183,7 +182,7 @@ bool TimerQueue::handleTask() {
 
     // 执行超时的定时器任务
     m_isHandleTask = true;
-    
+
     TimerTasks expiredTasks;
     auto now = std::chrono::system_clock::now();
     if (!this->getExpiredTasks(now, expiredTasks)) {
@@ -191,7 +190,7 @@ bool TimerQueue::handleTask() {
             if (!task->executeTask()) {
                 LOG_WARN << "Timer queue handle task warning. execute task failed. id: " << task->getId() << " thread id: " << threadId;
             }
-    
+
             // 重置定时器任务
             if (task->isRepeat()) {
                 task->reset();
@@ -219,7 +218,7 @@ bool TimerQueue::getExpiredTasks(Timestamp expired, TimerTasks& expiredTasks) {
         expiredTasks.insert(*iter);
         ++iter;
     }
-    
+
     // 删除超时的定时器任务
     if (expiredTasks.empty()) {
         return false;
@@ -239,7 +238,7 @@ bool TimerQueue::resetExpiredTimerTask() const {
     spec.it_value.tv_sec = nextExpiredMs.count() / 1000;
     spec.it_value.tv_nsec = (nextExpiredMs.count() % 1000) * 1000000;
     if (::timerfd_settime(m_timerChannel->getFd(), 0, &spec, nullptr) < 0) {
-        LOG_ERROR << "Timer queue handle task error. timerfd settime failed. thread id: " << std::this_thread::get_id() 
+        LOG_ERROR << "Timer queue handle task error. timerfd settime failed. thread id: " << std::this_thread::get_id()
                   << " errno: " << errno << " error info: " << strerror(errno);
         return false;
     }

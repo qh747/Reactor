@@ -12,22 +12,26 @@ namespace Utils {
 
 IPv4Address::IPv4Address(const std::string& ip, uint16_t port)
     : m_addr() {
-    if (ip.empty() || 0 == port) {
-        throw std::runtime_error("Invalid input param");
-    }
+    do {
+        if (ip.empty() || 0 == port) {
+            LOG_ERROR << "IPv4Address construct error. Invalid input param";
+            break;
+        }
 
-    memset(&m_addr, 0, sizeof(m_addr));
-    m_addr.sin_family = AF_INET;
+        memset(&m_addr, 0, sizeof(m_addr));
+        m_addr.sin_family = AF_INET;
 
-    if (inet_pton(AF_INET, ip.c_str(), &m_addr.sin_addr) != 1) {
-        throw std::runtime_error("Invalid ip address");
-    }
+        if (inet_pton(AF_INET, ip.c_str(), &m_addr.sin_addr) != 1) {
+            LOG_ERROR << "IPv4Address construct error. Invalid ip address";
+            break;
+        }
 
-    m_addr.sin_port = ::htons(port);
+        m_addr.sin_port = ::htons(port);
 
-    if (!this->IPv4Address::valid()) {
-        throw std::runtime_error("Invalid socket address");
-    }
+        if (!this->IPv4Address::valid()) {
+            LOG_ERROR << "IPv4Address construct error. Invalid socket address";
+        }
+    } while (false);
 }
 
 IPv4Address::IPv4Address(const sockaddr_in& addr)

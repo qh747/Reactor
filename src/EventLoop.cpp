@@ -14,8 +14,8 @@ using namespace Factory;
 
 namespace Net {
 
-EventLoop::EventLoop(std::thread::id threadId) 
-    : m_threadId(threadId), 
+EventLoop::EventLoop(std::thread::id threadId)
+    : m_threadId(threadId),
       m_running(false),
       m_waiting(false),
       m_poller(nullptr),
@@ -62,7 +62,7 @@ bool EventLoop::init() {
             return false;
         }
     }
-    
+
     // 初始化流程
     {
         // 初始化用于唤醒eventLoop的channel
@@ -92,7 +92,7 @@ bool EventLoop::init() {
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -125,7 +125,7 @@ bool EventLoop::loop() {
                 continue;
             }
         }
-    
+
         // 处理事件
         for (const auto& channelWrapper : m_activeChannels) {
             channelWrapper->m_channel->handleEvent(channelWrapper->m_activeEvType, returnTime);

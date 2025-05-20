@@ -12,7 +12,7 @@ EventLoopThread::EventLoopThread(ThreadInitCb cb)
       m_threadStartFlag(false),
       m_threadExitFlag(false) {
 }
-    
+
 EventLoopThread::~EventLoopThread() {
     if (!m_threadExitFlag) {
         this->quit();

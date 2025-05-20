@@ -8,7 +8,7 @@ using namespace Utils;
 
 namespace Net {
 
-PPoller::PPoller(EventLoopWkPtr loop) 
+PPoller::PPoller(EventLoopWkPtr loop)
     : Poller(std::move(loop)) {
     LOG_DEBUG << "Poll poller construct. id: " << m_id;
 }
@@ -41,7 +41,7 @@ Timestamp PPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& 
         if (errno == EINTR) {
             // 外部中断
             errCode = EINTR;
-            LOG_WARN << "Poll poll warning. external interrupt. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno); 
+            LOG_WARN << "Poll poll warning. external interrupt. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
         }
         else {
             // poll()出错
@@ -68,7 +68,7 @@ Timestamp PPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& 
             auto evType = static_cast<Event_t>(event.events);
             activeChannels.emplace_back(std::make_shared<ChannelWrapper>(channelMapIter->second, evType));
 
-            LOG_DEBUG << "Poll poll success. id: " << m_id << " fd: " << event.fd << " event type: " 
+            LOG_DEBUG << "Poll poll success. id: " << m_id << " fd: " << event.fd << " event type: "
                       << StringHelper::EventTypeToString(evType) << ".";
         }
     }
@@ -84,7 +84,7 @@ bool PPoller::updateChannel(Channel::Ptr channel) {
 
     // 添加channel
     int fd = channel->getFd();
-    if(m_channelMap.end() == m_channelMap.find(fd)) {
+    if (m_channelMap.end() == m_channelMap.find(fd)) {
         m_channelMap[fd] = channel;
     }
 
@@ -105,12 +105,12 @@ bool PPoller::updateChannel(Channel::Ptr channel) {
         }
     }
     else {
-        LOG_ERROR << "Update channel error. channel state invalid. id: " << m_id << " fd: " << fd  << " state: " 
+        LOG_ERROR << "Update channel error. channel state invalid. id: " << m_id << " fd: " << fd << " state: "
                   << StringHelper::StateTypeToString(state) << " event type: " << StringHelper::EventTypeToString(evType) << ".";
         return false;
     }
 
-    LOG_INFO << "Update channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
+    LOG_INFO << "Update channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
              << " event type: " << StringHelper::EventTypeToString(evType) << ".";
     return true;
 }
@@ -127,11 +127,11 @@ bool PPoller::removeChannel(Channel::Ptr channel) {
 
     // 移除channel
     int fd = channel->getFd();
-    if(m_channelMap.end() != m_channelMap.find(fd)) {
+    if (m_channelMap.end() != m_channelMap.find(fd)) {
         m_channelMap.erase(fd);
     }
 
-    LOG_INFO << "Remove channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
+    LOG_INFO << "Remove channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
              << " event type: " << StringHelper::EventTypeToString(channel->getEvType()) << ".";
     return true;
 }

@@ -51,7 +51,7 @@ Channel::~Channel() {
 bool Channel::open(Event_t type) {
     // 事件类型校验
     if (ValidEvents.end() == ValidEvents.find(type)) {
-        LOG_ERROR << "Channel open error. invalid event type. fd: " << m_fd << " event type: " 
+        LOG_ERROR << "Channel open error. invalid event type. fd: " << m_fd << " event type: "
                   << StringHelper::EventTypeToString(type);
         return false;
     }
@@ -72,7 +72,7 @@ bool Channel::open(Event_t type) {
 bool Channel::update(Event_t type) {
     // 事件类型校验
     if (ValidEvents.end() == ValidEvents.find(type)) {
-        LOG_ERROR << "Channel update error. invalid event type. fd: " << m_fd << " event type: " 
+        LOG_ERROR << "Channel update error. invalid event type. fd: " << m_fd << " event type: "
                   << StringHelper::EventTypeToString(type);
         return false;
     }
@@ -107,14 +107,14 @@ bool Channel::close() {
 bool Channel::handleEvent(Event_t type, Timestamp recvTime) {
     // 事件类型校验
     if (ValidEvents.end() == ValidEvents.find(type)) {
-        LOG_ERROR << "Channel handle event error. invalid event type. fd: " << m_fd << " event type: " 
+        LOG_ERROR << "Channel handle event error. invalid event type. fd: " << m_fd << " event type: "
                   << StringHelper::EventTypeToString(type);
         return false;
     }
 
     // channel未处于事件处理状态
     if (State_t::StatePending == m_state || Event_t::EvTypeNone == m_listenEvType) {
-        LOG_ERROR << "Channel handle event error. channel not in handle event state. fd: " << m_fd << " event type: " 
+        LOG_ERROR << "Channel handle event error. channel not in handle event state. fd: " << m_fd << " event type: "
                   << StringHelper::EventTypeToString(type);
         return false;
     }
@@ -124,7 +124,7 @@ bool Channel::handleEvent(Event_t type, Timestamp recvTime) {
     if (m_evCbMap.end() != evCbIter) {
         return this->handleEventWithoutCheck(type, recvTime);
     }
-    
+
     /** 单独事件类型匹配 */
     int listenEvType = static_cast<int>(m_listenEvType);
     int activeEvType = static_cast<int>(type);
@@ -148,8 +148,8 @@ bool Channel::handleEvent(Event_t type, Timestamp recvTime) {
     if ((listenEvType & EvErrorTypeCmp) && (activeEvType & EvErrorTypeCmp)) {
         return this->handleEventWithoutCheck(Event_t::EvTypeError, recvTime);
     }
-    
-    LOG_ERROR << "Channel handle event error. event not handled. fd: " << m_fd 
+
+    LOG_ERROR << "Channel handle event error. event not handled. fd: " << m_fd
               << " listen event type: " << StringHelper::EventTypeToString(m_listenEvType)
               << " active event type: " << StringHelper::EventTypeToString(type);
     return false;

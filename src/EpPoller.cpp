@@ -27,15 +27,15 @@ EpPoller::~EpPoller() {
 }
 
 Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
-    int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(), 
-        static_cast<int>(m_epollEventList.size()), timeoutMs);
+    int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(),
+                                     static_cast<int>(m_epollEventList.size()), timeoutMs);
 
     auto now = std::chrono::system_clock::now();
     if (activeEventSize < 0) {
         if (errno == EINTR) {
             // 外部中断
             errCode = EINTR;
-            LOG_WARN << "Epoll poll warning. external interrupt. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno); 
+            LOG_WARN << "Epoll poll warning. external interrupt. id: " << m_id << " code: " << errno << ". msg: " << strerror(errno);
         }
         else {
             // epoll_wait()出错
@@ -62,7 +62,7 @@ Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int&
             auto evType = static_cast<Event_t>(event.events);
             activeChannels.emplace_back(std::make_shared<ChannelWrapper>(channelMapIter->second, evType));
 
-            LOG_DEBUG << "Epoll poll success. id: " << m_id << " fd: " << event.data.fd << " event type: " 
+            LOG_DEBUG << "Epoll poll success. id: " << m_id << " fd: " << event.data.fd << " event type: "
                       << StringHelper::EventTypeToString(evType) << ".";
         }
 
@@ -83,7 +83,7 @@ bool EpPoller::updateChannel(Channel::Ptr channel) {
 
     // 添加channel
     int fd = channel->getFd();
-    if(m_channelMap.end() == m_channelMap.find(fd)) {
+    if (m_channelMap.end() == m_channelMap.find(fd)) {
         m_channelMap[fd] = channel;
     }
 
@@ -119,13 +119,13 @@ bool EpPoller::updateChannel(Channel::Ptr channel) {
         }
     }
     else {
-        LOG_ERROR << "Update channel error. channel state invalid. id: " << m_id << " fd: " << fd 
-                  << " state: " << StringHelper::StateTypeToString(state) 
+        LOG_ERROR << "Update channel error. channel state invalid. id: " << m_id << " fd: " << fd
+                  << " state: " << StringHelper::StateTypeToString(state)
                   << " event type: " << StringHelper::EventTypeToString(evType) << ".";
         return false;
     }
 
-    LOG_INFO << "Update channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
+    LOG_INFO << "Update channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
              << " event type: " << StringHelper::EventTypeToString(evType) << ".";
     return true;
 }
@@ -146,17 +146,17 @@ bool EpPoller::removeChannel(Channel::Ptr channel) {
     bool result = this->operateControl(fd, evType, PollerCtrl_t::PollerRemove);
 
     // 移除channel
-    if(m_channelMap.end() != m_channelMap.find(fd)) {
+    if (m_channelMap.end() != m_channelMap.find(fd)) {
         m_channelMap.erase(fd);
     }
 
     if (!result) {
-        LOG_ERROR << "Remove channel error. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
+        LOG_ERROR << "Remove channel error. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
                   << " event type: " << StringHelper::EventTypeToString(evType) << ".";
         return false;
     }
 
-    LOG_INFO << "Remove channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state) 
+    LOG_INFO << "Remove channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
              << " event type: " << StringHelper::EventTypeToString(evType) << ".";
     return true;
 }

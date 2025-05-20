@@ -8,7 +8,7 @@ using namespace Net;
 
 namespace Factory {
 
-/** 
+/**
  * @brief Poller工厂类
  */
 class PollerFactory : public NoncopyableConstructable {

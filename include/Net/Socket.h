@@ -49,10 +49,10 @@ public:
     void setReuseAddr(bool enabled) const;
 
     /**
-     * @brief 是否复用地址
-     * @param enabled 判断结果
+     * @brief  是否复用地址
+     * @return 判断结果
      */
-    bool getReuseAddr() const;
+    bool isReuseAddr() const;
 
     /**
      * @brief 复用端口
@@ -61,10 +61,10 @@ public:
     void setReusePort(bool enabled) const;
 
     /**
-     * @brief 是否复用端口
-     * @param enabled 判断结果
+     * @brief  是否复用端口
+     * @return 判断结果
      */
-    bool getReusePort() const;
+    bool isReusePort() const;
 
 public:
     /**
@@ -152,9 +152,9 @@ public:
      * @note   仅server socket使用
      * @brief  接受连接
      * @return 接受结果
-     * @param  peerSock 对端socket
+     * @param  connSock 连接socket
      */
-    bool accept(Socket::Ptr& peerSock) const;
+    bool accept(Socket::Ptr& connSock) const;
 
     /**
      * @note  仅tcp socket使用

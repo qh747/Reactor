@@ -43,6 +43,18 @@ typedef enum class StateType : int {
 } State_t;
 
 /**
+ * @brief 连接状态类型
+ */
+typedef enum class ConnStateType : int {
+    ConnStateClosed = 0,
+    ConnStateOpened = 1,
+    ConnStateConnected = 2,
+    ConnStateDisconnected = 3,
+    ConnStateError = 4
+
+} ConnState_t;
+
+/**
  * @brief poller类型
  */
 typedef enum class PollerType : int {

@@ -95,6 +95,14 @@ public:
      * @brief  获取socket本地地址
      * @return socket本地地址
      */
+    inline Address::Ptr getLocalAddr() const {
+        return m_localAddr;
+    }
+
+    /**
+     * @brief  获取socket本地ip地址
+     * @return socket本地ip地址
+     */
     inline std::string getLocalIpAddr() const {
         std::string ipAddr;
         if (this->isLocalAddrValid()) {
@@ -126,6 +134,14 @@ public:
     /**
      * @brief  获取socket对端地址
      * @return socket对端地址
+     */
+    inline Address::Ptr getRemoteAddr() const {
+        return m_peerAddr;
+    }
+
+    /**
+     * @brief  获取socket对端ip地址
+     * @return socket对端ip地址
      */
     inline std::string getRemoteIpAddr() const {
         std::string ipAddr;

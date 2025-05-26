@@ -316,6 +316,7 @@ public:
 private:
     // 缓冲区
     Buffer::Ptr m_buffer;
+
     // 互斥锁
     mutable std::mutex m_mutex;
 };

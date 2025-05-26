@@ -1,0 +1,218 @@
+#pragma once
+#include <atomic>
+#include <memory>
+#include "Common/TypeDef.h"
+#include "Utils/Utils.h"
+#include "Utils/Buffer.h"
+#include "Net/Socket.h"
+using namespace Utils;
+using namespace Common;
+
+namespace Net {
+
+/**
+ * @brief 连接类
+ */
+class Connection : public Noncopyable, public std::enable_shared_from_this<Connection> {
+public:
+    using Ptr = std::shared_ptr<Connection>;
+    using WkPtr = std::weak_ptr<Connection>;
+    using ConnCb = std::function<void(Connection::Ptr conn, bool isConn)>;
+    using CloseCb = std::function<void(Connection::Ptr conn)>;
+    using WriteableCb = std::function<void(Connection::Ptr conn)>;
+    using ReadableCb = std::function<void(Connection::Ptr conn, Buffer::Ptr buf, Timestamp recvTime)>;
+
+public:
+    Connection(const EventLoopWkPtr& loop, const Socket::Ptr& sock);
+    virtual ~Connection() = default;
+
+public:
+    /**
+     * @brief  连接建立
+     * @return 建立结果
+     */
+    bool open();
+
+    /**
+     * @brief  连接关闭
+     * @return 关闭结果
+     */
+    bool close();
+
+public:
+    /**
+     * @brief 设置连接回调函数
+     * @param cb 回调函数
+     */
+    inline void setConnectCallback(const ConnCb& cb) {
+        m_connCb = cb;
+    }
+
+    /**
+     * @brief 设置连接关闭回调函数
+     * @param cb 回调函数
+     */
+    inline void setCloseCallback(const CloseCb& cb) {
+        m_closeCb = cb;
+    }
+
+    /**
+     * @brief 设置消息回调函数
+     * @param cb 回调函数
+     */
+    inline void setMessageCallback(const ReadableCb& cb) {
+        m_readCb = cb;
+    }
+
+    /**
+     * @brief 设置可写回调函数
+     * @param cb 回调函数
+     */
+    inline void setWriteCompleteCallback(const WriteableCb& cb) {
+        m_writeCb = cb;
+    }
+
+    /**
+     * @brief  获取输入缓冲区
+     * @return 输入缓冲区
+     */
+    inline Buffer::Ptr getInputBuffer() const {
+        return m_inBuf;
+    }
+
+    /**
+     * @brief  获取输出缓冲区
+     * @return 输出缓冲区
+     */
+    inline Buffer::Ptr getOutputBuffer() const {
+        return m_outBuf;
+    }
+
+    /**
+     * @brief  获取本地地址
+     * @return 获取结果
+     * @param  addr 本地地址
+     */
+    inline bool getLocalAddr(Address::Ptr& addr) const {
+        if (nullptr == m_sock) {
+            return false;
+        }
+
+        addr = m_sock->getLocalAddr();
+        return true;
+    }
+
+    /**
+     * @brief  获取对端地址
+     * @return 获取结果
+     * @param  addr 对端地址
+     */
+    inline bool getRemoteAddr(Address::Ptr& addr) const {
+        if (nullptr == m_sock) {
+            return false;
+        }
+
+        addr = m_sock->getRemoteAddr();
+        return true;
+    }
+
+protected:
+    /**
+     * @brief  处理读事件
+     * @param  recvTime 接收到事件的时间
+     */
+    virtual void handleRead(Timestamp recvTime) = 0;
+
+    /**
+     * @brief  处理写事件
+     * @param  recvTime 接收到事件的时间
+     */
+    virtual void handleWrite(Timestamp recvTime) = 0;
+
+    /**
+     * @brief  处理连接关闭事件
+     * @param  recvTime 接收到事件的时间
+     */
+    virtual void handleClose(Timestamp recvTime) = 0;
+
+    /**
+     * @brief  处理连接错误事件
+     * @param  recvTime 接收到事件的时间
+     */
+    virtual void handleError(Timestamp recvTime) = 0;
+
+protected:
+    // socket对象
+    Socket::Ptr m_sock;
+
+    // 连接状态回调函数
+    ConnCb m_connCb;
+
+    // 连接关闭回调函数
+    CloseCb m_closeCb;
+
+    // 可读回调函数
+    ReadableCb m_readCb;
+
+    // 可写回调函数
+    WriteableCb m_writeCb;
+
+    // 输入缓冲区对象
+    Buffer::Ptr m_inBuf;
+
+    // 输出缓冲区对象
+    Buffer::Ptr m_outBuf;
+
+    // channel对象
+    ChannelPtr m_channel;
+
+    // 事件循环对象弱引用
+    EventLoopWkPtr m_ownerLoop;
+
+    // 连接状态
+    std::atomic<ConnState_t> m_connState;
+};
+
+/**
+ * @brief tcp连接类
+ */
+class TcpConnection : public Connection {
+public:
+    using Ptr = std::shared_ptr<TcpConnection>;
+    using WkPtr = std::weak_ptr<TcpConnection>;
+
+public:
+    TcpConnection(const EventLoopWkPtr& loop, const Socket::Ptr& sock);
+    ~TcpConnection() override = default;
+
+protected:
+    /**
+     * @brief  处理读事件
+     * @param  recvTime 接收到事件的时间
+     */
+    void handleRead(Timestamp recvTime) override;
+
+    /**
+     * @brief  处理写事件
+     * @param  recvTime 接收到事件的时间
+     */
+    void handleWrite(Timestamp recvTime) override;
+
+    /**
+     * @brief  处理连接关闭事件
+     * @param  recvTime 接收到事件的时间
+     */
+    void handleClose(Timestamp recvTime) override;
+
+    /**
+     * @brief  处理连接错误事件
+     * @param  recvTime 接收到事件的时间
+     */
+    void handleError(Timestamp recvTime) override;
+
+private:
+    // tcp高水位线
+    std::size_t m_highWaterMark;
+};
+
+}; // namespace Net

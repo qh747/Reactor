@@ -1,9 +1,8 @@
 #pragma once
 #include <mutex>
 #include <vector>
-#include "Common/ConfigDef.h"
-
 #include <memory>
+#include "Common/ConfigDef.h"
 using namespace Common;
 
 namespace Utils {
@@ -48,8 +47,9 @@ public:
     /**
      * @brief  获取缓冲区中可读数据起始地址
      * @return 可读数据起始地址
+     * @param  size 可读数据长度
      */
-    const char* peek() const;
+    const char* peek(std::size_t& size) const;
 
     /**
      * @brief 从缓冲区中读取数据
@@ -210,6 +210,10 @@ private:
  * @brief 线程安全的缓冲区类
  */
 class ThreadBuffer {
+public:
+    using Ptr = std::shared_ptr<ThreadBuffer>;
+    using WkPtr = std::weak_ptr<ThreadBuffer>;
+
 public:
     explicit ThreadBuffer(std::size_t initSize = BUFFER_INIT_SIZE);
     ~ThreadBuffer() = default;

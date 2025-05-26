@@ -44,7 +44,8 @@ void Buffer::shrink(std::size_t len) {
     this->swap(other);
 }
 
-const char* Buffer::peek() const {
+const char* Buffer::peek(std::size_t& size) const {
+    size = this->readableBytes();
     return this->readBegin();
 }
 

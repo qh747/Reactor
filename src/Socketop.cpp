@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/uio.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include "Utils/Logger.h"
@@ -105,7 +106,7 @@ bool Socketop::ShutdownSocket(int fd, SocketShutdown_t type) {
 }
 
 bool Socketop::GetSocketFamilyType(int fd, Addr_t& addrType) {
-    sockaddr_storage addr;
+    sockaddr_storage addr = {};
     socklen_t len = sizeof(addr);
 
     if (-1 == ::getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &len)) {
@@ -123,7 +124,7 @@ bool Socketop::IsLocalAddrValid(int fd) {
         return false;
     }
 
-    sockaddr_storage addr;
+    sockaddr_storage addr = {};
     socklen_t len = sizeof(addr);
 
     if (::getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
@@ -132,13 +133,13 @@ bool Socketop::IsLocalAddrValid(int fd) {
     }
 
     if (addr.ss_family == AF_INET) {
-        sockaddr_in* ipv4Addr = reinterpret_cast<sockaddr_in*>(&addr);
+        auto ipv4Addr = reinterpret_cast<sockaddr_in*>(&addr);
         if (ipv4Addr->sin_addr.s_addr == INADDR_ANY || ipv4Addr->sin_addr.s_addr == INADDR_LOOPBACK) {
             return false;
         }
     }
     else if (addr.ss_family == AF_INET6) {
-        sockaddr_in6* ipv6Addr = reinterpret_cast<sockaddr_in6*>(&addr);
+        auto ipv6Addr = reinterpret_cast<sockaddr_in6*>(&addr);
         if (IN6_ARE_ADDR_EQUAL(&ipv6Addr->sin6_addr, &in6addr_any) || IN6_IS_ADDR_LOOPBACK(&ipv6Addr->sin6_addr)) {
             return false;
         }
@@ -157,7 +158,7 @@ bool Socketop::GetLocalIpAddr(int fd, std::string& ipAddr) {
         return false;
     }
 
-    sockaddr_storage addr;
+    sockaddr_storage addr = {};
     socklen_t len = sizeof(addr);
 
     if (::getsockname(fd, reinterpret_cast<struct sockaddr*>(&addr), &len) == -1) {
@@ -197,7 +198,7 @@ bool Socketop::GetLocalPort(int fd, uint16_t& port) {
         return false;
     }
 
-    sockaddr_storage addr;
+    sockaddr_storage addr = {};
     socklen_t len = sizeof(addr);
 
     if (::getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
@@ -225,7 +226,7 @@ bool Socketop::GetLocalIpAddrPort(int fd, std::string& ipAddr, uint16_t& port) {
         return false;
     }
 
-    sockaddr_storage addr;
+    sockaddr_storage addr = {};
     socklen_t len = sizeof(addr);
 
     if (::getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
@@ -267,7 +268,7 @@ bool Socketop::IsRemoteAddrValid(int fd) {
         return false;
     }
 
-    sockaddr_storage addr;
+    sockaddr_storage addr = {};
     socklen_t len = sizeof(addr);
 
     if (::getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
@@ -277,7 +278,7 @@ bool Socketop::IsRemoteAddrValid(int fd) {
     }
 
     if (addr.ss_family == AF_INET) {
-        sockaddr_in* ipv4Addr = reinterpret_cast<sockaddr_in*>(&addr);
+        auto ipv4Addr = reinterpret_cast<sockaddr_in*>(&addr);
 
         // 检查地址是否有效（非0.0.0.0且非回环地址127.0.0.1）
         if (ipv4Addr->sin_addr.s_addr == INADDR_ANY ||
@@ -288,7 +289,7 @@ bool Socketop::IsRemoteAddrValid(int fd) {
         return true;
     }
     else if (addr.ss_family == AF_INET6) {
-        sockaddr_in6* ipv6Addr = reinterpret_cast<sockaddr_in6*>(&addr);
+        auto ipv6Addr = reinterpret_cast<sockaddr_in6*>(&addr);
 
         // 检查地址是否有效（非::且非::1）
         if (IN6_IS_ADDR_UNSPECIFIED(&ipv6Addr->sin6_addr) ||
@@ -310,7 +311,7 @@ bool Socketop::GetRemoteIpAddr(int fd, std::string& ipAddr) {
         return false;
     }
 
-    sockaddr_storage addr;
+    sockaddr_storage addr = {};
     socklen_t len = sizeof(addr);
 
     if (::getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
@@ -318,7 +319,7 @@ bool Socketop::GetRemoteIpAddr(int fd, std::string& ipAddr) {
         return false;
     }
 
-    char ip[INET6_ADDRSTRLEN]; // 使用更大的缓冲区以适应IPv6地址
+    char ip[INET6_ADDRSTRLEN];
     void* srcAddr = nullptr;
     int addrFamily = 0;
 
@@ -350,7 +351,7 @@ bool Socketop::GetRemotePort(int fd, uint16_t& port) {
         return false;
     }
 
-    sockaddr_storage addr;
+    sockaddr_storage addr = {};
     socklen_t len = sizeof(addr);
 
     if (::getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
@@ -378,7 +379,7 @@ bool Socketop::GetRemoteIpAddrPort(int fd, std::string& ipAddr, uint16_t& port) 
         return false;
     }
 
-    sockaddr_storage addr;
+    sockaddr_storage addr = {};
     socklen_t len = sizeof(addr);
 
     if (::getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &len) == -1) {
@@ -386,7 +387,7 @@ bool Socketop::GetRemoteIpAddrPort(int fd, std::string& ipAddr, uint16_t& port) 
         return false;
     }
 
-    char ip[INET6_ADDRSTRLEN]; // 使用更大的缓冲区以适应IPv6地址
+    char ip[INET6_ADDRSTRLEN];
     void* srcAddr = nullptr;
     int addrFamily = 0;
 
@@ -516,6 +517,35 @@ bool Socketop::SetKeepalive(int fd, bool enabled) {
     }
 
     return true;
+}
+
+int Socketop::GetSocketError(int fd) {
+    int optval = 0;
+    auto optlen = static_cast<socklen_t>(sizeof optval);
+    if (::getsockopt(fd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0) {
+        return errno;
+    }
+
+    return optval;
+}
+
+ssize_t Socketop::Read(int fd, void* buf, size_t len) {
+    return ::read(fd, buf, len);
+}
+
+ssize_t Socketop::Readv(int fd, const struct iovec* iov, int iovcnt) {
+    return ::readv(fd, iov, iovcnt);
+}
+
+/**
+ * @brief  写入数据
+ * @return 写入数据结果
+ * @param  fd 套接字描述符
+ * @param  buf 缓冲区
+ * @param  len 缓冲区长度
+ */
+ssize_t Socketop::Write(int fd, const void* buf, size_t len) {
+    return ::write(fd, buf, len);
 }
 
 } // namespace Utils

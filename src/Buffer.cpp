@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <cerrno>
+#include <unistd.h>
 #include <sys/uio.h>
+#include "Utils/Socketop.h"
 #include "Utils/Buffer.h"
 
 namespace Utils {
-
-/** ---------------------------------------------------------- Buffer ---------------------------------------------------------- */
 
 Buffer::Buffer(std::size_t initSize)
     : m_buffer(BUFFER_PREPEND_SIZE + initSize), m_readIdx(BUFFER_PREPEND_SIZE), m_writeIdx(BUFFER_PREPEND_SIZE) {
@@ -22,7 +22,7 @@ void Buffer::extend(std::size_t len) {
 
     if (this->writableBytes() + this->prependableBytes() < len + BUFFER_PREPEND_SIZE) {
         // 拷贝缓冲区原有数据
-        std::vector<char> newBuffer(m_buffer.size() + len);
+        std::vector<uint8_t> newBuffer(m_buffer.size() + len);
         std::copy_n(m_buffer.begin() + static_cast<int>(m_readIdx), readable, newBuffer.begin() + BUFFER_PREPEND_SIZE);
 
         // 重置缓冲区
@@ -44,12 +44,12 @@ void Buffer::shrink(std::size_t len) {
     this->swap(other);
 }
 
-const char* Buffer::peek(std::size_t& size) const {
+const uint8_t* Buffer::peek(std::size_t& size) const {
     size = this->readableBytes();
     return this->readBegin();
 }
 
-void Buffer::read(std::vector<char>& buffer, std::size_t& len) {
+void Buffer::read(std::vector<uint8_t>& buffer, std::size_t& len) {
     len = this->readableBytes();
     if (buffer.size() < len) {
         buffer.resize(len);
@@ -59,13 +59,13 @@ void Buffer::read(std::vector<char>& buffer, std::size_t& len) {
     this->moveReadStartPos(len);
 }
 
-void Buffer::write(const char* data, std::size_t len) {
+void Buffer::write(const uint8_t* data, std::size_t len) {
     this->ensureWritableBytes(len);
     std::copy_n(data, len, this->writeBegin());
     this->moveWriteStartPos(len);
 }
 
-bool Buffer::readFixSize(std::vector<char>& buffer, std::size_t len) {
+bool Buffer::readFixSize(std::vector<uint8_t>& buffer, std::size_t len) {
     std::size_t readable = this->readableBytes();
     if (readable < len) {
         return false;
@@ -80,7 +80,7 @@ bool Buffer::readFixSize(std::vector<char>& buffer, std::size_t len) {
     return true;
 }
 
-bool Buffer::readFd(int fd, int& err, std::size_t& len) {
+ssize_t Buffer::readFd(int fd, int& err) {
     iovec vec[2] = {};
 
     // 设置主缓冲区
@@ -89,17 +89,17 @@ bool Buffer::readFd(int fd, int& err, std::size_t& len) {
     vec[0].iov_len = writable;
 
     // 设置备用缓冲区
-    char backBuf[65536] = {0};
+    uint8_t backBuf[65536] = {0};
     constexpr std::size_t backBufSize = sizeof(backBuf);
     vec[1].iov_base = backBuf;
     vec[1].iov_len = backBufSize;
 
     // 读取数据
     const int iovcnt = (writable < backBufSize) ? 2 : 1;
-    len = ::readv(fd, vec, iovcnt);
-    if (len < 0) {
+    ssize_t len = Socketop::Readv(fd, vec, iovcnt);
+    if (-1 == len) {
         err = errno;
-        return false;
+        return len;
     }
     else if (len <= writable) {
         this->moveWriteStartPos(len);
@@ -109,55 +109,18 @@ bool Buffer::readFd(int fd, int& err, std::size_t& len) {
         this->write(backBuf, len - writable);
     }
 
-    return true;
+    return len;
 }
 
-/** ---------------------------------------------------------- ThreadBuffer ---------------------------------------------------------- */
+ssize_t Buffer::writeFd(int fd, int& err) {
+    ssize_t len = Socketop::Write(fd, this->readBegin(), this->readableBytes());
+    if (-1 == len) {
+       err = errno;
+       return len;
+    }
 
-ThreadBuffer::ThreadBuffer(std::size_t initSize) {
-    m_buffer = std::make_shared<Buffer>(initSize);
-}
-
-void ThreadBuffer::swap(Buffer& other) const noexcept {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_buffer->swap(other);
-}
-
-void ThreadBuffer::extend(std::size_t len) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_buffer->extend(len);
-}
-
-void ThreadBuffer::shrink(std::size_t len) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_buffer->shrink(len);
-}
-
-void ThreadBuffer::peek(std::vector<char>& buffer, std::size_t& len, std::size_t peekLen) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    len = std::min(peekLen, m_buffer->readableBytes());
-    std::copy_n(m_buffer->readBegin(), len, buffer.data());
-}
-
-void ThreadBuffer::read(std::vector<char>& buffer, std::size_t& len) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_buffer->read(buffer, len);
-}
-
-void ThreadBuffer::write(const char* data, std::size_t len) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_buffer->write(data, len);
-}
-
-bool ThreadBuffer::readFixSize(std::vector<char>& buffer, std::size_t len) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_buffer->readFixSize(buffer, len);
-}
-
-bool ThreadBuffer::readFd(int fd, int& err, std::size_t& len) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_buffer->readFd(fd, err, len);
+    this->moveReadStartPos(len);
+    return len;
 }
 
 } // namespace Utils

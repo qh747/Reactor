@@ -100,6 +100,14 @@ public:
     }
 
     /**
+     * @brief  打印socket本地地址
+     * @return 打印结果
+     */
+    inline std::string printLocalAddr() const {
+        return nullptr == m_localAddr ? "" : m_localAddr->printIpPort();
+    }
+
+    /**
      * @brief  获取socket本地ip地址
      * @return socket本地ip地址
      */
@@ -137,6 +145,14 @@ public:
      */
     inline Address::Ptr getRemoteAddr() const {
         return m_peerAddr;
+    }
+
+    /**
+     * @brief  打印socket对端地址
+     * @return 打印结果
+     */
+    inline std::string printRemoteAddr() const {
+        return nullptr == m_peerAddr ? "" : m_peerAddr->printIpPort();
     }
 
     /**

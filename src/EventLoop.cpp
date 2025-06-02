@@ -266,7 +266,7 @@ bool EventLoop::executeTaskInLoop(const Task& task, bool highPriority) {
 }
 
 bool EventLoop::addTimerAtSpecificTime(TimerQueue::TimerId& id, TimerTask::Task cb, Timestamp expires, double intervalSec) const {
-    return m_timerQueue->addTimerTask(id, std::move(cb), expires, intervalSec);
+    return m_timerQueue->addTimerTask(id, std::move(cb), std::move(expires), intervalSec);
 }
 
 bool EventLoop::addTimerAfterSpecificTime(TimerQueue::TimerId& id, TimerTask::Task cb, double delay, double intervalSec) const {
@@ -282,9 +282,8 @@ bool EventLoop::handleTask() {
     TaskList currentTaskList;
 
     {
-        std::lock_guard<std::mutex> lock(m_taskMutex);
-
         // 将当前EventLoop分配的任务转移到currentTaskList
+        std::lock_guard<std::mutex> lock(m_taskMutex);
         currentTaskList.swap(m_taskList);
     }
 

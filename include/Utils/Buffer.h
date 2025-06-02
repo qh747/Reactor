@@ -14,7 +14,7 @@ namespace Utils {
  * | prependable bytes |  readable bytes  |  writable bytes  |
  * |                   |     (CONTENT)    |                  |
  * +-------------------+------------------+------------------+
- * 0        <=         m_readIdx   <=     m_writeIdx   <=    m_buffer.size()
+ * 0        <=     m_readIdx    <=    m_writeIdx   <=    m_buffer.size()
  */
 class Buffer {
 public:
@@ -49,21 +49,21 @@ public:
      * @return 可读数据起始地址
      * @param  size 可读数据长度
      */
-    const char* peek(std::size_t& size) const;
+    const uint8_t* peek(std::size_t& size) const;
 
     /**
      * @brief 从缓冲区中读取数据
      * @param buffer 存储读取数据的缓冲区
      * @param len 存储读取数据的长度
      */
-    void read(std::vector<char>& buffer, std::size_t& len);
+    void read(std::vector<uint8_t>& buffer, std::size_t& len);
 
     /**
      * @brief  将数据写入缓冲区
      * @param  data 数据指针
      * @param  len  数据长度
      */
-    void write(const char* data, std::size_t len);
+    void write(const uint8_t* data, std::size_t len);
 
     /**
      * @brief  从缓冲区中读取固定长度数据
@@ -71,23 +71,30 @@ public:
      * @param  buffer 存储读取数据的缓冲区
      * @param  len 固定长度大小
      */
-    bool readFixSize(std::vector<char>& buffer, std::size_t len);
+    bool readFixSize(std::vector<uint8_t>& buffer, std::size_t len);
 
     /**
      * @brief  读取网络数据
-     * @return 读取结果
+     * @return 读取数据长度
      * @param  fd 网络文件描述符
      * @param  err 错误码
-     * @param  len 读取数据长度
      */
-    bool readFd(int fd, int& err, std::size_t& len);
+    ssize_t readFd(int fd, int& err);
+
+    /**
+     * @brief  写入网络数据
+     * @return 写入数据长度
+     * @param  fd 网络文件描述符
+     * @param  err 错误码
+     */
+    ssize_t writeFd(int fd, int& err);
 
 public:
     /**
      * @brief  获取缓冲区可读数据起始地址
      * @return 可读数据起始地址
      */
-    inline const char* readBegin() const {
+    inline const uint8_t* readBegin() const {
         return begin() + m_readIdx;
     }
 
@@ -96,7 +103,7 @@ public:
      * @brief  获取缓冲区可读数据起始地址
      * @return 可读数据起始地址
      */
-    inline char* readBegin() {
+    inline uint8_t* readBegin() {
         return begin() + m_readIdx;
     }
 
@@ -104,7 +111,7 @@ public:
      * @brief  获取缓冲区可写数据起始地址
      * @return 可写数据起始地址
      */
-    inline const char* writeBegin() const {
+    inline const uint8_t* writeBegin() const {
         return begin() + m_writeIdx;
     }
 
@@ -113,7 +120,7 @@ public:
      * @brief  获取缓冲区可写数据起始地址
      * @return 可写数据起始地址
      */
-    inline char* writeBegin() {
+    inline uint8_t* writeBegin() {
         return begin() + m_writeIdx;
     }
 
@@ -152,12 +159,12 @@ public:
         }
     }
 
-private:
+public:
     /**
      * @brief  获取缓冲区起始地址
      * @return 缓冲区起始地址
      */
-    inline const char* begin() const {
+    inline const uint8_t* begin() const {
         return m_buffer.data();
     }
 
@@ -165,7 +172,7 @@ private:
      * @brief  获取缓冲区起始地址
      * @return 缓冲区起始地址
      */
-    inline char* begin() {
+    inline uint8_t* begin() {
         return m_buffer.data();
     }
 
@@ -197,128 +204,13 @@ private:
 
 private:
     // 缓冲区数据存储容器
-    std::vector<char> m_buffer;
+    std::vector<uint8_t> m_buffer;
 
     // 缓冲区可读数据的起始位置索引
     std::size_t m_readIdx;
 
     // 缓冲区可写数据的起始位置索引
     std::size_t m_writeIdx;
-};
-
-/**
- * @brief 线程安全的缓冲区类
- */
-class ThreadBuffer {
-public:
-    using Ptr = std::shared_ptr<ThreadBuffer>;
-    using WkPtr = std::weak_ptr<ThreadBuffer>;
-
-public:
-    explicit ThreadBuffer(std::size_t initSize = BUFFER_INIT_SIZE);
-    ~ThreadBuffer() = default;
-
-public:
-    /**
-     * @brief  buffer交换
-     * @param  other 交换对象
-     */
-    void swap(Buffer& other) const noexcept;
-
-    /**
-     * @brief 拓展缓冲区大小
-     * @param len 调整后的大小
-     */
-    void extend(std::size_t len) const;
-
-    /**
-     * @brief 收缩缓冲区大小
-     * @param len 调整后的大小
-     */
-    void shrink(std::size_t len) const;
-
-    /**
-     * @brief 获取缓冲区中可读数据起始地址
-     * @param buffer 存储读取数据的缓冲区
-     * @param len 存储读取数据的长度
-     * @param peekLen 要读取的数据长度
-     */
-    void peek(std::vector<char>& buffer, std::size_t& len, std::size_t peekLen) const;
-
-    /**
-     * @brief 从缓冲区中读取数据
-     * @param buffer 存储读取数据的缓冲区
-     * @param len 存储读取数据的长度
-     */
-    void read(std::vector<char>& buffer, std::size_t& len) const;
-
-    /**
-     * @brief  将数据写入缓冲区
-     * @param  data 数据指针
-     * @param  len  数据长度
-     */
-    void write(const char* data, std::size_t len) const;
-
-    /**
-     * @brief  从缓冲区中读取固定长度数据
-     * @return 读取结果
-     * @param  buffer 存储读取数据的缓冲区
-     * @param  len 固定长度大小
-     */
-    bool readFixSize(std::vector<char>& buffer, std::size_t len) const;
-
-    /**
-     * @brief  读取网络数据
-     * @return 读取结果
-     * @param  fd 网络文件描述符
-     * @param  err 错误码
-     * @param  len 读取数据长度
-     */
-    bool readFd(int fd, int& err, std::size_t& len) const;
-
-public:
-    /**
-     * @brief  获取可读数据大小
-     * @return 可读数据大小
-     */
-    inline std::size_t readableBytes() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_buffer->readableBytes();
-    }
-
-    /**
-    * @brief  获取可写数据大小
-    * @return 可写数据大小
-    */
-    inline std::size_t writableBytes() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_buffer->writableBytes();
-    }
-
-    /**
-     * @brief  获取缓冲区中前置数据大小
-     * @return 前置数据大小
-     */
-    inline std::size_t prependableBytes() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_buffer->prependableBytes();
-    }
-
-    /**
-     * @brief 确保数据写入空间足够
-     * @param len 写入数据长度
-     */
-    inline void ensureWritableBytes(std::size_t len) const {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_buffer->ensureWritableBytes(len);
-    }
-
-private:
-    // 缓冲区
-    Buffer::Ptr m_buffer;
-
-    // 互斥锁
-    mutable std::mutex m_mutex;
 };
 
 }; // namespace Utils

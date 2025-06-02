@@ -19,8 +19,8 @@ public:
     using WkPtr = std::weak_ptr<Connection>;
     using ConnCb = std::function<void(Connection::Ptr conn, bool isConn)>;
     using CloseCb = std::function<void(Connection::Ptr conn)>;
-    using WriteableCb = std::function<void(Connection::Ptr conn)>;
     using ReadableCb = std::function<void(Connection::Ptr conn, Buffer::Ptr buf, Timestamp recvTime)>;
+    using WriteableCb = std::function<void(Connection::Ptr conn)>;
 
 public:
     Connection(const EventLoopWkPtr& loop, const Socket::Ptr& sock);
@@ -28,18 +28,57 @@ public:
 
 public:
     /**
-     * @brief  连接建立
-     * @return 建立结果
+     * @brief  连接打开
+     * @return 打开结果
      */
-    bool open();
+    virtual bool open();
+
+    /**
+     * @brief  连接建立
+     * @return 连接结果
+     */
+    virtual bool connect();
+
+    /**
+     * @brief  连接断开
+     * @return 断开结果
+     */
+    virtual bool disconnect();
 
     /**
      * @brief  连接关闭
      * @return 关闭结果
+     * @param  delay 延迟关闭时间(单位: 秒)
      */
-    bool close();
+    virtual bool close(double delay);
+
+    /**
+     * @brief  发送数据
+     * @return 发送结果
+     * @param  data 发送数据
+     * @param  size 发送数据长度
+     */
+    virtual bool send(const void* data, std::size_t size);
 
 public:
+    /**
+     * @brief  获取连接信息
+     * @return 连接信息
+     */
+    std::string getConnectionInfo() const;
+
+    /**
+     * @brief  开启读事件
+     * @return 开启结果
+     */
+    bool enableRead();
+
+    /**
+     * @brief  关闭读事件
+     * @return 关闭结果
+     */
+    bool disableRead();
+
     /**
      * @brief 设置连接回调函数
      * @param cb 回调函数
@@ -103,6 +142,14 @@ public:
     }
 
     /**
+     * @brief  打印本地地址
+     * @return 本地地址
+     */
+    inline std::string printLocalAddr() const {
+        return nullptr == m_sock ? "" : m_sock->printLocalAddr();
+    }
+
+    /**
      * @brief  获取对端地址
      * @return 获取结果
      * @param  addr 对端地址
@@ -114,6 +161,22 @@ public:
 
         addr = m_sock->getRemoteAddr();
         return true;
+    }
+
+    /**
+     * @brief  打印本地地址
+     * @return 本地地址
+     */
+    inline std::string printRemoteAddr() const {
+        return nullptr == m_sock ? "" : m_sock->printRemoteAddr();
+    }
+
+    /**
+     * @brief  获取socket fd
+     * @return socket fd
+     */
+    inline int getFd() const {
+        return nullptr == m_sock ? -1 : m_sock->getFd();
     }
 
 protected:
@@ -180,10 +243,52 @@ class TcpConnection : public Connection {
 public:
     using Ptr = std::shared_ptr<TcpConnection>;
     using WkPtr = std::weak_ptr<TcpConnection>;
+    using HighWaterMarkCb = std::function<void(Connection::Ptr conn, std::size_t highWaterMark)>;
 
 public:
     TcpConnection(const EventLoopWkPtr& loop, const Socket::Ptr& sock);
     ~TcpConnection() override = default;
+
+public:
+    /**
+     * @brief  发送数据
+     * @return 发送结果
+     * @param  data 发送数据
+     * @param  size 发送数据长度
+     */
+    bool send(const void* data, std::size_t size) override;
+
+    /**
+     * @brief  关闭连接
+     * @return 关闭结果
+     */
+    bool shutdown();
+
+public:
+    /**
+     * @brief 设置高水位回调函数
+     * @param cb 回调函数
+     * @param highWaterMark 高水位
+     */
+    inline void setHighWaterMarkCallback(const HighWaterMarkCb& cb, std::size_t highWaterMark) {
+        m_highWaterMarkCb = cb;
+    }
+
+    /**
+     * @brief 设置是否启用nodelay
+     * @param enabled 是否启用
+     */
+    inline void setNodelay(bool enabled) const {
+        m_sock->setNoDelayEnabled(enabled);
+    }
+
+    /**
+     * @brief 设置是否启用keepalive
+     * @param enabled 是否启用
+     */
+    inline void setKeepalive(bool enabled) const {
+        m_sock->setKeepaliveEnabled(enabled);
+    }
 
 protected:
     /**
@@ -213,6 +318,9 @@ protected:
 private:
     // tcp高水位线
     std::size_t m_highWaterMark;
+
+    // 高水位回调函数
+    HighWaterMarkCb m_highWaterMarkCb;
 };
 
 }; // namespace Net

@@ -27,9 +27,7 @@ EpPoller::~EpPoller() {
 }
 
 Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
-    int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(),
-                                     static_cast<int>(m_epollEventList.size()), timeoutMs);
-
+    int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(), static_cast<int>(m_epollEventList.size()), timeoutMs);
     auto now = std::chrono::system_clock::now();
     if (activeEventSize < 0) {
         if (errno == EINTR) {

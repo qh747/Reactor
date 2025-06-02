@@ -94,6 +94,54 @@ public:
     }
 
     /**
+     * @brief  判断是否可写
+     * @return 判断结果
+     */
+    inline bool writeEnabled() const {
+        return static_cast<int>(m_listenEvType) & static_cast<int>(Event_t::EvTypeWrite);
+    }
+
+    /**
+     * @brief 开启写事件
+     */
+    inline void enableWrite() {
+        int evType = static_cast<int>(m_listenEvType) | static_cast<int>(Event_t::EvTypeWrite);
+        m_listenEvType = static_cast<Event_t>(evType);
+    }
+
+    /**
+     * @brief 关闭写事件
+     */
+    inline void disableWrite() {
+        int evType = static_cast<int>(m_listenEvType) & (~static_cast<int>(Event_t::EvTypeWrite));
+        m_listenEvType = static_cast<Event_t>(evType);
+    }
+
+    /**
+     * @brief  判断是否可读
+     * @return 判断结果
+     */
+    inline bool readEnabled() const {
+        return static_cast<int>(m_listenEvType) & static_cast<int>(Event_t::EvTypeRead);
+    }
+
+    /**
+     * @brief 开启读事件
+     */
+    inline void enableRead() {
+        int evType = static_cast<int>(m_listenEvType) | static_cast<int>(Event_t::EvTypeRead);
+        m_listenEvType = static_cast<Event_t>(evType);
+    }
+
+    /**
+     * @brief 关闭读事件
+     */
+    inline void disableRead() {
+        int evType = static_cast<int>(m_listenEvType) & (~static_cast<int>(Event_t::EvTypeRead));
+        m_listenEvType = static_cast<Event_t>(evType);
+    }
+
+    /**
      * @brief  获取事件循环对象
      * @return 事件循环对象
      */

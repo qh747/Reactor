@@ -189,6 +189,42 @@ public:
      * @param  enabled 是否启用
      */
     static bool SetKeepalive(int fd, bool enabled);
+
+public:
+    /**
+     * @brief  获取套接字错误码
+     * @return 错误码
+     * @param  fd 套接字描述符
+     */
+    static int GetSocketError(int fd);
+
+public:
+    /**
+     * @brief  读取数据
+     * @return 读取数据结果
+     * @param  fd 套接字描述符
+     * @param  buf 缓冲区
+     * @param  len 缓冲区长度
+     */
+    static ssize_t Read(int fd, void* buf, size_t len);
+
+    /**
+     * @brief  读取数据
+     * @return 读取数据结果
+     * @param  fd 套接字描述符
+     * @param  iov 缓冲区数组
+     * @param  iovcnt 缓冲区数组长度
+     */
+    static ssize_t Readv(int fd, const struct iovec* iov, int iovcnt);
+
+    /**
+     * @brief  写入数据
+     * @return 写入数据结果
+     * @param  fd 套接字描述符
+     * @param  buf 缓冲区
+     * @param  len 缓冲区长度
+     */
+    static ssize_t Write(int fd, const void* buf, size_t len);
 };
 
 }; // namespace Utils

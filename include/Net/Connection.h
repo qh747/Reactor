@@ -34,23 +34,23 @@ public:
     virtual bool open();
 
     /**
-     * @brief  连接建立
+     * @brief  连接关闭
+     * @return 关闭结果
+     * @param  delay 延迟关闭时间(单位: 秒)
+     */
+    virtual bool close(double delay);
+
+    /**
+     * @brief  连接重新建立
      * @return 连接结果
      */
-    virtual bool connect();
+    virtual bool reconnect();
 
     /**
      * @brief  连接断开
      * @return 断开结果
      */
     virtual bool disconnect();
-
-    /**
-     * @brief  连接关闭
-     * @return 关闭结果
-     * @param  delay 延迟关闭时间(单位: 秒)
-     */
-    virtual bool close(double delay);
 
     /**
      * @brief  发送数据
@@ -128,6 +128,14 @@ public:
     }
 
     /**
+     * @brief  获取连接id
+     * @return 连接id
+     */
+    inline std::string getConnectionId() const {
+        return m_connId;
+    }
+
+    /**
      * @brief  获取本地地址
      * @return 获取结果
      * @param  addr 本地地址
@@ -179,6 +187,14 @@ public:
         return nullptr == m_sock ? -1 : m_sock->getFd();
     }
 
+    /**
+     * @brief  获取事件循环对象弱引用
+     * @return 事件循环对象弱引用
+     */
+    inline EventLoopWkPtr getOwnerLoop() const {
+        return m_ownerLoop;
+    }
+
 protected:
     /**
      * @brief  处理读事件
@@ -205,6 +221,9 @@ protected:
     virtual void handleError(Timestamp recvTime) = 0;
 
 protected:
+    // 连接id
+    std::string m_connId;
+
     // socket对象
     Socket::Ptr m_sock;
 

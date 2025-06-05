@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <cstdint>
 #include "Common/DataDef.h"
 using namespace Common;
 
@@ -64,6 +65,16 @@ public:
      * @param  path 文件路径
      */
     static const char* GetFileName(const char* path);
+
+    /**
+     * @brief  获取唯一ID
+     * @return 唯一ID
+     * @param  localIp 本端IP
+     * @param  localPort 本端端口
+     * @param  peerIp 对端IP
+     * @param  peerPort 对端端口
+     */
+    static std::string GetUniqueId(const std::string& localIp, uint16_t localPort, const std::string& peerIp, uint16_t peerPort);
 
     /**
      * @brief  获取事件类型字符串

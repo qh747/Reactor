@@ -18,6 +18,17 @@ Connection::Connection(const EventLoopWkPtr& loop, const Socket::Ptr& sock)
         LOG_FATAL << "Connection construct error. invalid input param.";
     }
 
+    // 创建id
+    std::string localIp;
+    uint16_t localPort;
+    sock->getLocalAddr()->getIpPort(localIp, localPort);
+
+    std::string remoteIp;
+    uint16_t remotePort;
+    sock->getRemoteAddr()->getIpPort(remoteIp, remotePort);
+
+    m_connId = StringHelper::GetUniqueId(localIp, localPort, remoteIp, remotePort);
+
     // 创建输入输出缓冲区
     m_inBuf = std::make_shared<Buffer>();
     m_outBuf = std::make_shared<Buffer>();
@@ -78,7 +89,7 @@ bool Connection::open() {
     return true;
 }
 
-bool Connection::connect() {
+bool Connection::reconnect() {
     if (ConnState_t::ConnStateConnected == m_connState) {
         // 连接已经建立
         LOG_WARN << "Connection connect warning. connection already connected. " << this->getConnectionInfo();

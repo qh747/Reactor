@@ -13,8 +13,8 @@ namespace Thread {
  */
 class EventLoopThreadPool : public Noncopyable, public std::enable_shared_from_this<EventLoopThreadPool> {
 public:
-    using Ptr = std::shared_ptr<EventLoopThread>;
-    using WkPtr = std::weak_ptr<EventLoopThread>;
+    using Ptr = std::shared_ptr<EventLoopThreadPool>;
+    using WkPtr = std::weak_ptr<EventLoopThreadPool>;
 
 public:
     explicit EventLoopThreadPool(unsigned int numWorkThreads = 0, const ThreadInitCb& cb = nullptr);
@@ -40,7 +40,7 @@ private:
     const std::string m_id;
 
     // 事件循环工作循环索引
-    mutable unsigned int m_nextIdx{0};
+    mutable unsigned int m_nextIdx { 0 };
 
     // 事件循环主线程
     EventLoopThreadPtr m_eventLoopMainThread;

@@ -39,6 +39,12 @@ const char* StringHelper::GetFileName(const char* path) {
     return file;
 }
 
+std::string StringHelper::GetUniqueId(const std::string& localIp, uint16_t localPort, const std::string& peerIp, uint16_t peerPort) {
+    std::stringstream ss;
+    ss << localIp << ":" << localPort << "-" << peerIp << ":" << peerPort;
+    return ss.str();
+}
+
 std::string StringHelper::EventTypeToString(Event_t event) {
     static const std::unordered_map<Event_t, std::string> EventTypeStrings = {
         {Event_t::EvTypeNone, "None"},

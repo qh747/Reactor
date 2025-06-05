@@ -26,6 +26,9 @@ void TcpServer::run() {
         LOG_WARN << "Tcp server run warning. already started. server info: " << m_addr->printIpPort();
         return;
     }
+    else {
+        m_isStarted = true;
+    }
 
     EventLoop::WkPtr mainLoop;
     m_workLoopThreadPool->getMainEventLoop(mainLoop);
@@ -42,10 +45,13 @@ void TcpServer::run() {
     });
 }
 
-void TcpServer::shutdown() const {
+void TcpServer::shutdown() {
     if (!m_isStarted) {
         LOG_WARN << "Tcp server shutdown warning. already shutdown. server info: " << m_addr->printIpPort();
         return;
+    }
+    else {
+        m_isStarted = false;
     }
 
     // 关闭tcp服务管理的所有连接
@@ -58,6 +64,7 @@ void TcpServer::shutdown() const {
 }
 
 void TcpServer::onNewConnection(Socket::Ptr& connSock, Timestamp recvTime) {
+    // 获取工作线程
     EventLoop::WkPtr workLoop;
     m_workLoopThreadPool->getNextWorkEventLoop(workLoop);
 
@@ -75,6 +82,7 @@ void TcpServer::onNewConnection(Socket::Ptr& connSock, Timestamp recvTime) {
 
     auto weakSelf = this->weak_from_this();
     conn->setCloseCallback([weakSelf, mainLoop](const Connection::Ptr& conn)  {
+        // 将connection移除放在主线程中执行
         std::string connId = conn->getConnectionId();
         mainLoop.lock()->executeTask([weakSelf, connId]() {
             weakSelf.lock()->m_connMap.erase(connId);

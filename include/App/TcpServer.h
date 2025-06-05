@@ -35,7 +35,7 @@ public:
     /**
      * @brief 关闭服务
      */
-    void shutdown() const;
+    void shutdown();
 
 public:
     /**

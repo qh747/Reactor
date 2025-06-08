@@ -1,5 +1,6 @@
 #include <cstring>
 #include <unistd.h>
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/uio.h>
@@ -70,7 +71,6 @@ bool Socketop::AcceptSocket(int fd, const Address::Ptr& addr, int& connfd) {
 
     if ((connfd = ::accept(fd, &sockAddr, &sockLen) < 0)) {
         LOG_ERROR << "Socket accept error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
-        ;
         return false;
     }
     return true;
@@ -516,6 +516,58 @@ bool Socketop::SetKeepalive(int fd, bool enabled) {
         return false;
     }
 
+    return true;
+}
+
+bool Socketop::IsBlocking(int fd) {
+    int flags = ::fcntl(fd, F_GETFL, 0);
+    return 0 == (flags & O_NONBLOCK);
+}
+
+bool Socketop::SetBlocking(int fd, bool enabled) {
+    if (fd < 0) {
+        LOG_ERROR << "Socket set blocking error. invalid input param. fd: " << fd;
+        return false;
+    }
+
+    int flags = ::fcntl(fd, F_GETFL, 0);
+    if (!enabled) {
+        flags &= ~O_NONBLOCK;
+    }
+    else {
+        flags |= O_NONBLOCK;
+    }
+
+    if (::fcntl(fd, F_SETFL, flags) < 0) {
+        LOG_ERROR << "Socket set blocking error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
+        return false;
+    }
+    return true;
+}
+
+bool Socketop::IsCloexec(int fd) {
+    int flags = ::fcntl(fd, F_GETFD, 0);
+    return 0 == (flags & FD_CLOEXEC);
+}
+
+bool Socketop::SetCloexec(int fd, bool enabled) {
+    if (fd < 0) {
+        LOG_ERROR << "Socket set cloexec error. invalid input param. fd: " << fd;
+        return false;
+    }
+
+    int flags = ::fcntl(fd, F_GETFD, 0);
+    if (!enabled) {
+        flags &= ~FD_CLOEXEC;
+    }
+    else {
+        flags |= FD_CLOEXEC;
+    }
+
+    if (::fcntl(fd, F_SETFD, flags) < 0) {
+        LOG_ERROR << "Socket set cloexec error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
+        return false;
+    }
     return true;
 }
 

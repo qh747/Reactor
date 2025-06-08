@@ -61,6 +61,7 @@ void TcpServer::shutdown() {
             conn->close(0);
         });
     }
+    m_connMap.clear();
 }
 
 void TcpServer::onNewConnection(Socket::Ptr& connSock, Timestamp recvTime) {

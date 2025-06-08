@@ -66,8 +66,14 @@ bool Socket::accept(Socket::Ptr& connSock) const {
         return false;
     }
 
+    // 创建socket
     connSock = std::make_shared<Socket>(connfd, m_type);
 
+    // 设置socket属性
+    Socketop::SetBlocking(connfd, Socketop::IsBlocking(m_fd));
+    Socketop::SetCloexec(connfd, Socketop::IsCloexec(m_fd));
+
+    // 设置socket地址
     std::string localIpAddr;
     uint16_t localPort;
     if (!Socketop::GetLocalIpAddrPort(connfd, localIpAddr, localPort)) {

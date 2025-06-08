@@ -43,21 +43,18 @@ if (BUILD_SHARED_REACTOR_LIB AND BUILD_STATIC_REACTOR_LIB)
     add_library(${REACTOR_LIB_STATIC} STATIC ${SRC_FILES})
     set_target_properties(${REACTOR_LIB_STATIC} PROPERTIES OUTPUT_NAME ${REACTOR_LIB_NAME})
     target_include_directories(${REACTOR_LIB_STATIC} PUBLIC ${REACTOR_INCLUDE_PATH})
-
 elseif (BUILD_SHARED_REACTOR_LIB)
     message("Only Build Shared Library Enabled")
     
     add_library(${REACTOR_LIB_SHARED} SHARED ${SRC_FILES})
     set_target_properties(${REACTOR_LIB_SHARED} PROPERTIES OUTPUT_NAME ${REACTOR_LIB_NAME})
     target_include_directories(${REACTOR_LIB_SHARED} PUBLIC ${REACTOR_INCLUDE_PATH})
-
 else()
     message("Only Build Static Library Enabled")
 
     add_library(${REACTOR_LIB_STATIC} STATIC ${SRC_FILES})
     set_target_properties(${REACTOR_LIB_STATIC} PROPERTIES OUTPUT_NAME ${REACTOR_LIB_NAME})
     target_include_directories(${REACTOR_LIB_STATIC} PUBLIC ${REACTOR_INCLUDE_PATH})
-
 endif ()
 
 # 测试程序
@@ -70,3 +67,12 @@ else()
     message("Build Tests Disabled")
 endif (BUILD_TESTS)
 
+# 案例程序
+option(BUILD_EXAMPLES "Build Examples" OFF)
+
+if (BUILD_EXAMPLES)
+    message("Build Examples Enabled")
+    add_subdirectory(${CMAKE_SOURCE_DIR}/examples)
+else()
+    message("Build Examples Disabled")
+endif (BUILD_EXAMPLES)

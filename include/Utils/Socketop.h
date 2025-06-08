@@ -190,6 +190,36 @@ public:
      */
     static bool SetKeepalive(int fd, bool enabled);
 
+    /**
+     * @brief  判断套接字是否为阻塞
+     * @return 判断结果
+     * @param  fd 套接字描述符
+     */
+    static bool IsBlocking(int fd);
+
+    /**
+     * @brief  设置套接字为阻塞
+     * @return 设置结果
+     * @param  fd 套接字描述符
+     * @param  enabled 是否为阻塞
+     */
+    static bool SetBlocking(int fd, bool enabled);
+
+    /**
+     * @brief  判断套接字是否为cloexec
+     * @return 判断结果
+     * @param  fd 套接字描述符
+     */
+    static bool IsCloexec(int fd);
+
+    /**
+     * @brief  设置套接字为cloexec
+     * @return 设置结果
+     * @param  fd 套接字描述符
+     * @param  enabled 是否为cloexec
+     */
+    static bool SetCloexec(int fd, bool enabled);
+
 public:
     /**
      * @brief  获取套接字错误码

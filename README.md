@@ -8,6 +8,7 @@ use for test reactor network model
  1. BUILD_SHARED_REACTOR_LIB: build shared library. default is OFF.
  2. BUILD_STATIC_REACTOR_LIB: build static library. default is ON.
  3. BUILD_TESTS: build test program. default is ON.
+ 4. BUILD_EXAMPLES: build examples. default is ON.
 
 ``` 
 

@@ -42,7 +42,7 @@ public:
      * @brief 设置连接回调函数
      * @param cb 回调函数
      */
-    inline void setConnCb(const ConnCb& cb) {
+    inline void setConnectCallback(const ConnCb& cb) {
         m_connCb = cb;
     }
 
@@ -50,7 +50,7 @@ public:
      * @brief 设置数据读取回调函数
      * @param cb 回调函数
      */
-    inline void setReadCb(const ReadableCb& cb) {
+    inline void setMessageCallback(const ReadableCb& cb) {
         m_readCb = cb;
     }
 
@@ -58,7 +58,7 @@ public:
      * @brief 设置数据写入回调函数
      * @param cb 回调函数
      */
-    inline void setWriteCb(const WriteableCb& cb) {
+    inline void setWriteCompleteCallback(const WriteableCb& cb) {
         m_writeCb = cb;
     }
 

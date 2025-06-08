@@ -73,7 +73,7 @@ void TcpServer::onNewConnection(Socket::Ptr& connSock, Timestamp recvTime) {
     m_connMap[conn->getConnectionId()] = conn;
 
     // 设置新连接回调函数
-    conn->setConnectCallback(m_newConnCb);
+    conn->setConnectCallback(m_connCb);
     conn->setMessageCallback(m_readCb);
     conn->setWriteCompleteCallback(m_writeCb);
 
@@ -82,6 +82,9 @@ void TcpServer::onNewConnection(Socket::Ptr& connSock, Timestamp recvTime) {
 
     auto weakSelf = this->weak_from_this();
     conn->setCloseCallback([weakSelf, mainLoop](const Connection::Ptr& conn)  {
+        // 关闭连接
+        conn->close(0);
+
         // 将connection移除放在主线程中执行
         std::string connId = conn->getConnectionId();
         mainLoop.lock()->executeTask([weakSelf, connId]() {

@@ -161,19 +161,27 @@ bool Connection::close(double delay) {
         return true;
     }
 
-    auto loop = m_ownerLoop.lock();
-    if (loop->isInCurrentThread() && 0.0 >= delay) {
-        this->handleClose(std::chrono::system_clock::now());
+    auto ownerLoop = m_ownerLoop.lock();
+    if (delay > 0) {
+        TimerId timerId;
+        auto strongSelf = this->shared_from_this();
+        ownerLoop->addTimerAfterSpecificTime(timerId, [strongSelf]() {
+            strongSelf->m_connState = ConnState_t::ConnStateClosed;
+            strongSelf->m_channel->close();
+        }, delay);
     }
     else {
-        auto weakSelf = this->weak_from_this();
-
-        TimerId id = 0;
-        loop->addTimerAfterSpecificTime(id, [weakSelf]() {
-            if (!weakSelf.expired()) {
-                weakSelf.lock()->handleClose(std::chrono::system_clock::now());
-            }
-        }, delay);
+        if (!ownerLoop->isInCurrentThread()) {
+            auto strongSelf = this->shared_from_this();
+            ownerLoop->executeTaskInLoop([strongSelf]() {
+                strongSelf->m_connState = ConnState_t::ConnStateClosed;
+                strongSelf->m_channel->close();
+            });
+        }
+        else {
+            m_connState = ConnState_t::ConnStateClosed;
+            m_channel->close();
+        }
     }
 
     return true;
@@ -492,9 +500,6 @@ void TcpConnection::handleClose(Timestamp recvTime) {
             }
         }
     });
-
-    m_connState = ConnState_t::ConnStateClosed;
-    m_channel->close();
 }
 
 void TcpConnection::handleError(Timestamp recvTime) {

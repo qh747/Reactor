@@ -39,11 +39,11 @@ public:
 
 public:
     /**
-     * @brief 设置新连接回调函数
+     * @brief 设置连接回调函数
      * @param cb 回调函数
      */
-    inline void setNewConnCb(const ConnCb& cb) {
-        m_newConnCb = cb;
+    inline void setConnCb(const ConnCb& cb) {
+        m_connCb = cb;
     }
 
     /**
@@ -86,8 +86,8 @@ private:
     // 连接管理map
     ConnectionMap m_connMap;
 
-    // 新连接回调函数
-    ConnCb m_newConnCb;
+    // 连接回调函数
+    ConnCb m_connCb;
 
     // 数据读取回调函数
     ReadableCb m_readCb;

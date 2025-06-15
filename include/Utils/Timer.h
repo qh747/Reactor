@@ -107,7 +107,7 @@ public:
     using TimerTasks = std::set<TimerTask::Ptr, TimerTask::Compare>;
 
 public:
-    explicit TimerQueue(EventLoopWkPtr loop);
+    explicit TimerQueue(EventLoopWkPtr loop, std::string  id);
     ~TimerQueue();
 
 public:
@@ -156,6 +156,12 @@ private:
     bool resetExpiredTimerTask() const;
 
 private:
+    // 定时器队列id
+    std::string m_id;
+
+    // 定时器队列是否初始化
+    std::atomic_bool m_isInit;
+
     // 定时器队列所属的事件循环
     EventLoopWkPtr m_ownerLoop;
 

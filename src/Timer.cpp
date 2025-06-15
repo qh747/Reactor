@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstring>
+#include <utility>
 #include <unistd.h>
 #include <sys/timerfd.h>
 #include "Utils/Logger.h"
@@ -44,32 +45,32 @@ bool TimerTask::reset() {
 
 /** -------------------------------- TimerQueue ------------------------------------- */
 
-TimerQueue::TimerQueue(EventLoop::WkPtr loop)
-    : m_ownerLoop(std::move(loop)),
+TimerQueue::TimerQueue(EventLoop::WkPtr loop, std::string id)
+    : m_id(std::move(id)),
+      m_isInit(false),
+      m_ownerLoop(std::move(loop)),
       m_timerChannel(nullptr),
       m_isHandleTask(false) {
-    LOG_DEBUG << "Timer queue construct. thread id: " << std::this_thread::get_id();
+    LOG_DEBUG << "Timer queue construct. id: " << m_id;
 }
 
 TimerQueue::~TimerQueue() {
-    LOG_DEBUG << "Timer queue deconstruct. thread id: " << std::this_thread::get_id();
-
     if (nullptr != m_timerChannel) {
         m_timerChannel->close();
     }
 
     ::close(m_timerChannel->getFd());
+    LOG_DEBUG << "Timer queue deconstruct. id: " << m_id;
 }
 
 bool TimerQueue::addTimerTask(TimerId& id, const TimerTask::Task& cb, Timestamp expires, double intervalSec) {
-    auto threadId = std::this_thread::get_id();
     if (nullptr == cb) {
-        LOG_ERROR << "Add timer task error. timer task callback invalid. thread id: " << threadId;
+        LOG_ERROR << "Add timer task error. timer task callback invalid. id: " << m_id;
         return false;
     }
 
     if (nullptr == m_timerChannel) {
-        LOG_ERROR << "Add timer task error. timer channel invalid. thread id: " << threadId;
+        LOG_ERROR << "Add timer task error. timer channel invalid. id: " << m_id;
         return false;
     }
 
@@ -77,23 +78,26 @@ bool TimerQueue::addTimerTask(TimerId& id, const TimerTask::Task& cb, Timestamp 
     TimerTask::Ptr task = std::make_shared<TimerTask>(cb, expires, intervalSec);
     id = task->getId();
 
+    std::string timerQueueId = m_id;
     auto weakSelf = this->weak_from_this();
-    m_ownerLoop.lock()->executeTask([weakSelf, task, threadId]() {
+    m_ownerLoop.lock()->executeTask([weakSelf, task, timerQueueId]() {
         if (weakSelf.expired()) {
-            LOG_ERROR << "Timer queue add task error. timer queue expired. thread id: " << threadId;
+            LOG_ERROR << "Timer queue add task error. timer queue expired. id: " << timerQueueId;
             return;
         }
 
         // 判断是否需要重置定时器的超时时间
         auto strongSelf = weakSelf.lock();
-        auto resetFlag = strongSelf->m_timerTasks.empty() ? true : (strongSelf->m_timerTasks.begin()->get()->getExpires() < task->getExpires() ? true : false);
+        auto resetFlag = strongSelf->m_timerTasks.empty() ?
+            true :
+            strongSelf->m_timerTasks.begin()->get()->getExpires() < task->getExpires() ? true : false;
 
         // 添加定时器任务
         strongSelf->m_timerTasks.insert(task);
 
         // 重置定时器的超时时间
         if (resetFlag && !strongSelf->resetExpiredTimerTask()) {
-            LOG_ERROR << "Timer queue add task error. reset expired timer task failed. thread id: " << threadId;
+            LOG_ERROR << "Timer queue add task error. reset expired timer task failed. id: " << timerQueueId;
         }
     });
 
@@ -101,17 +105,16 @@ bool TimerQueue::addTimerTask(TimerId& id, const TimerTask::Task& cb, Timestamp 
 }
 
 bool TimerQueue::delTimerTask(TimerId id) {
-    auto threadId = std::this_thread::get_id();
-
     if (nullptr == m_timerChannel) {
-        LOG_ERROR << "Delete timer task error. timer channel invalid. thread id: " << threadId;
+        LOG_ERROR << "Delete timer task error. timer channel invalid. id: " << m_id;
         return false;
     }
 
+    std::string timerQueueId = m_id;
     auto weakSelf = this->weak_from_this();
-    m_ownerLoop.lock()->executeTask([weakSelf, id, threadId]() {
+    m_ownerLoop.lock()->executeTask([weakSelf, id, timerQueueId]() {
         if (weakSelf.expired()) {
-            LOG_ERROR << "Timer queue delete task error. timer queue expired. thread id: " << threadId;
+            LOG_ERROR << "Timer queue delete task error. timer queue expired. id: " << timerQueueId;
             return;
         }
 
@@ -135,46 +138,46 @@ bool TimerQueue::delTimerTask(TimerId id) {
 
 bool TimerQueue::init() {
     // 防止重复初始化
-    if (nullptr != m_timerChannel) {
-        LOG_WARN << "Timer queue init warning. Timer channel already exist. fd: " << m_timerChannel->getFd()
-                 << " thread id: " << std::this_thread::get_id();
+    if (m_isInit) {
+        LOG_WARN << "Timer queue init warning. initialized already. id: " << m_id;
         return true;
     }
 
     // 创建timer channel
     int timerfd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
     if (timerfd < 0) {
-        LOG_ERROR << "Timer queue construct error. Timerfd create failed. errno: " << errno << " error info: " << strerror(errno);
+        LOG_ERROR << "Timer queue init error. timer fd create failed. id: " << m_id << " errno: " << errno << " error info: " << strerror(errno);
         return false;
     }
     m_timerChannel = std::make_shared<Channel>(m_ownerLoop, timerfd);
 
     // 设置timer channel的读事件回调函数
+    std::string id = m_id;
     auto weakSelf = this->weak_from_this();
-    return m_timerChannel->setEventCb(Event_t::EvTypeRead, [weakSelf](Timestamp recvTime) {
+    m_isInit = m_timerChannel->setEventCb(Event_t::EvTypeRead, [weakSelf, id](Timestamp recvTime) {
         (void)recvTime;
 
         if (weakSelf.expired()) {
-            LOG_ERROR << "Timer queue handle task error. timer queue expired. thread id: " << std::this_thread::get_id();
+            LOG_ERROR << "Timer queue handle task error. timer queue expired. id: " << id;
             return;
         }
 
         // 读取数据并非主要目的，主要目的用于唤醒处于poll()等待的eventLoop
         auto strongSelf = weakSelf.lock();
         if (!strongSelf->handleTask()) {
-            LOG_ERROR << "Timer queue handle task error. thread id: " << std::this_thread::get_id();
+            LOG_ERROR << "Timer queue handle task error. id: " << id;
         }
     });
+
+    return m_isInit;
 }
 
 bool TimerQueue::handleTask() {
-    auto threadId = std::this_thread::get_id();
-
     // 读取数据(读取数据并非主要目的，主要目的用于处理超时的定时器任务)
     uint64_t data = 1;
     if (::read(m_timerChannel->getFd(), &data, sizeof(data)) < sizeof(data)) {
-        LOG_ERROR << "Timer queue handle task error. read failed. thread id: " << threadId
-                  << " errno: " << errno << ", error: " << strerror(errno);
+        LOG_ERROR << "Timer queue handle task error. read failed. id: " << m_id << " errno: " << errno << ", error: " << strerror(errno);
+        return false;
     }
 
     // 移除待取消的定时器
@@ -188,7 +191,8 @@ bool TimerQueue::handleTask() {
     if (!this->getExpiredTasks(now, expiredTasks)) {
         for (auto& task : expiredTasks) {
             if (!task->executeTask()) {
-                LOG_WARN << "Timer queue handle task warning. execute task failed. id: " << task->getId() << " thread id: " << threadId;
+                LOG_WARN << "Timer queue handle task warning. execute task failed. task id: " << task->getId() << " id: " << m_id;
+                continue;
             }
 
             // 重置定时器任务
@@ -201,7 +205,7 @@ bool TimerQueue::handleTask() {
 
     // 重置timer channel下次超时时间
     if (!m_timerTasks.empty() && !this->resetExpiredTimerTask()) {
-        LOG_ERROR << "Timer queue handle task error. reset expired timer task failed. thread id: " << threadId;
+        LOG_ERROR << "Timer queue handle task error. reset expired timer task failed. id: " << m_id;
         return false;
     }
 
@@ -238,8 +242,8 @@ bool TimerQueue::resetExpiredTimerTask() const {
     spec.it_value.tv_sec = nextExpiredMs.count() / 1000;
     spec.it_value.tv_nsec = (nextExpiredMs.count() % 1000) * 1000000;
     if (::timerfd_settime(m_timerChannel->getFd(), 0, &spec, nullptr) < 0) {
-        LOG_ERROR << "Timer queue handle task error. timerfd settime failed. thread id: " << std::this_thread::get_id()
-                  << " errno: " << errno << " error info: " << strerror(errno);
+        LOG_ERROR << "Timer queue handle task error. timer fd settime failed. id: " << m_id << " errno: " << errno
+            << " error info: " << strerror(errno);
         return false;
     }
 

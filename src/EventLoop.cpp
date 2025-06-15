@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cstring>
+#include <utility>
 #include <unistd.h>
 #include <sys/eventfd.h>
 #include "Common/ConfigDef.h"
@@ -14,29 +15,29 @@ using namespace Factory;
 
 namespace Net {
 
-EventLoop::EventLoop(std::thread::id threadId)
-    : m_threadId(threadId),
+EventLoop::EventLoop(std::string id)
+    : m_id(std::move(id)),
+      m_threadId(std::this_thread::get_id()),
       m_running(false),
       m_waiting(false),
       m_poller(nullptr),
       m_wakeupChannel(nullptr) {
-    LOG_DEBUG << "Eventloop construct. thread id: " << m_threadId;
+    LOG_DEBUG << "Eventloop construct. id: " << m_id;
 }
 
 EventLoop::~EventLoop() {
-    LOG_DEBUG << "Eventloop deconstruct. thread id: " << m_threadId;
-
     if (nullptr != m_wakeupChannel) {
         m_wakeupChannel->close();
     }
 
     ::close(m_wakeupChannel->getFd());
+    LOG_DEBUG << "Eventloop deconstruct. id: " << m_id;
 }
 
 bool EventLoop::init() {
     // 防止重复初始化
     if (m_running) {
-        LOG_WARN << "Eventloop init warning. initialized already. thread id: " << m_threadId;
+        LOG_WARN << "Eventloop init warning. initialized already. id: " << m_id;
         return true;
     }
 
@@ -45,20 +46,19 @@ bool EventLoop::init() {
         // 创建用于唤醒eventLoop的channel
         int wakeupFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
         if (wakeupFd < 0) {
-            LOG_ERROR << "Eventloop init error. create wakeup fd failed. thread id: " << m_threadId
-                      << " errno: " << errno << ", error: " << strerror(errno);
+            LOG_ERROR << "Eventloop init error. create wakeup fd failed. id: " << m_id << " errno: " << errno << ". error: " << strerror(errno);
             return false;
         }
         m_wakeupChannel = std::make_shared<Channel>(this->weak_from_this(), wakeupFd);
 
         // 创建定时器队列
-        m_timerQueue = std::make_shared<TimerQueue>(this->weak_from_this());
+        m_timerQueue = std::make_shared<TimerQueue>(this->weak_from_this(), m_id + "-TIME_QUEUE_1");
 
         // 创建I/O多路复用封装对象
         m_poller = PollerFactory::CreatePoller(POLLER_DEFAULT_TYPE, this->weak_from_this());
 
         if (nullptr == m_poller) {
-            LOG_ERROR << "Eventloop init error. create poller failed. thread id: " << m_threadId;
+            LOG_ERROR << "Eventloop init error. create poller failed. id: " << m_id;
             return false;
         }
     }
@@ -66,12 +66,13 @@ bool EventLoop::init() {
     // 初始化流程
     {
         // 初始化用于唤醒eventLoop的channel
+        std::string evLoopId = m_id;
         auto weakSelf = this->weak_from_this();
-        m_wakeupChannel->setEventCb(Event_t::EvTypeRead, [weakSelf](Timestamp recvTime) {
+        m_wakeupChannel->setEventCb(Event_t::EvTypeRead, [weakSelf, evLoopId](Timestamp recvTime) {
             (void)recvTime;
 
             if (weakSelf.expired()) {
-                LOG_ERROR << "Eventloop wakeup error. eventloop expired. thread id: " << std::this_thread::get_id();
+                LOG_ERROR << "Eventloop wakeup error. eventloop expired. id: " << evLoopId;
                 return;
             }
 
@@ -79,8 +80,7 @@ bool EventLoop::init() {
             auto strongSelf = weakSelf.lock();
             uint64_t data = 0;
             if (::read(strongSelf->m_wakeupChannel->getFd(), &data, sizeof(data)) < sizeof(data)) {
-                LOG_ERROR << "Eventloop wakeup error. read failed. thread id: " << strongSelf->m_threadId
-                          << " errno: " << errno << ", error: " << strerror(errno);
+                LOG_ERROR << "Eventloop wakeup error. read failed. id: " << evLoopId << " errno: " << errno << ", error: " << strerror(errno);
             }
         });
 
@@ -88,7 +88,7 @@ bool EventLoop::init() {
 
         // 初始化定时器队列
         if (!m_timerQueue->init()) {
-            LOG_ERROR << "Eventloop init error. timer queue init failed. thread id: " << m_threadId;
+            LOG_ERROR << "Eventloop init error. timer queue init failed. id: " << m_id;
             return false;
         }
     }
@@ -99,11 +99,11 @@ bool EventLoop::init() {
 bool EventLoop::loop() {
     // 防止重复启动事件循环
     if (m_running) {
-        LOG_WARN << "Eventloop loop warning. looped already. thread id: " << m_threadId;
+        LOG_WARN << "Eventloop loop warning. looped already. id: " << m_id;
         return true;
     }
 
-    LOG_INFO << "Eventloop start. thread id: " << m_threadId;
+    LOG_INFO << "Eventloop start. id: " << m_id;
 
     // 启动事件循环
     m_running = true;
@@ -117,8 +117,7 @@ bool EventLoop::loop() {
         Timestamp returnTime = m_poller->poll(POLLER_DEFAULT_WAIT_TIME, m_activeChannels, errCode);
         if (0 != errCode) {
             if (EINTR != errCode && ETIMEDOUT != errCode) {
-                LOG_ERROR << "Eventloop loop error. poll failed. thread id: " << m_threadId
-                          << " errno: " << errno << ", error: " << strerror(errno);
+                LOG_ERROR << "Eventloop loop error. poll failed. id: " << m_id << " errno: " << errno << ", error: " << strerror(errno);
                 return false;
             }
             else {
@@ -136,14 +135,14 @@ bool EventLoop::loop() {
         m_waiting = false;
     }
 
-    LOG_INFO << "Eventloop stop. thread id: " << m_threadId;
+    LOG_INFO << "Eventloop stop. id: " << m_id;
     return true;
 }
 
 bool EventLoop::quit() {
     // 防止重复退出事件循环
     if (!m_running) {
-        LOG_WARN << "Eventloop quit warning. quited already. thread id: " << m_threadId;
+        LOG_WARN << "Eventloop quit warning. quited already. id: " << m_id;
         return true;
     }
 
@@ -153,7 +152,7 @@ bool EventLoop::quit() {
     // 如果当前处于poll()等待或退出其他线程的事件循环时，则唤醒
     if (m_waiting || !this->isInCurrentThread()) {
         if (!wakeup()) {
-            LOG_ERROR << "Eventloop quit error. wakeup failed. thread id: " << m_threadId;
+            LOG_ERROR << "Eventloop quit error. wakeup failed. id: " << m_id;
             return false;
         }
     }
@@ -164,8 +163,7 @@ bool EventLoop::quit() {
 bool EventLoop::wakeup() const {
     uint64_t data = 1;
     if (::write(m_wakeupChannel->getFd(), &data, sizeof(data)) < sizeof(data)) {
-        LOG_ERROR << "Eventloop wakeup error. write failed. thread id: " << m_threadId
-                  << " errno: " << errno << ", error: " << strerror(errno);
+        LOG_ERROR << "Eventloop wakeup error. write failed. id: " << m_id << " errno: " << errno << ", error: " << strerror(errno);
         return false;
     }
     return true;
@@ -174,20 +172,20 @@ bool EventLoop::wakeup() const {
 bool EventLoop::updateChannel(const ChannelPtr& channel) const {
     // 判断channel是否有效
     if (nullptr == channel) {
-        LOG_ERROR << "Eventloop update channel error. channel invalid. thread id: " << m_threadId;
+        LOG_ERROR << "Eventloop update channel error. channel invalid. id: " << m_id;
         return false;
     }
 
     // 判断channel是否与当前eventLoop关联
     auto channelOwnerLoop = channel->getOwnerLoop();
-    if (nullptr == channel || channelOwnerLoop.expired() || channelOwnerLoop.lock()->getThreadId() != m_threadId) {
-        LOG_ERROR << "Eventloop update channel error. channel owner event loop invalid. thread id: " << m_threadId;
+    if (nullptr == channel || channelOwnerLoop.expired() || channelOwnerLoop.lock()->m_threadId != m_threadId) {
+        LOG_ERROR << "Eventloop update channel error. channel owner event loop invalid. id: " << m_id;
         return false;
     }
 
     // 更新channel
     if (!m_poller->updateChannel(channel)) {
-        LOG_ERROR << "Eventloop update channel error. update poller channel failed. thread id: " << m_threadId;
+        LOG_ERROR << "Eventloop update channel error. update poller channel failed. id: " << m_id;
         return false;
     }
     return true;
@@ -196,20 +194,20 @@ bool EventLoop::updateChannel(const ChannelPtr& channel) const {
 bool EventLoop::removeChannel(const ChannelPtr& channel) const {
     // 判断channel是否有效
     if (nullptr == channel) {
-        LOG_ERROR << "Eventloop remove channel error. channel invalid. thread id: " << m_threadId;
+        LOG_ERROR << "Eventloop remove channel error. channel invalid. id: " << m_id;
         return false;
     }
 
     // 判断channel是否与当前eventLoop关联
     auto channelOwnerLoop = channel->getOwnerLoop();
-    if (nullptr == channel || channelOwnerLoop.expired() || channelOwnerLoop.lock()->getThreadId() != m_threadId) {
-        LOG_ERROR << "Eventloop remove channel error. channel owner event loop invalid. thread id: " << m_threadId;
+    if (nullptr == channel || channelOwnerLoop.expired() || channelOwnerLoop.lock()->m_threadId != m_threadId) {
+        LOG_ERROR << "Eventloop remove channel error. channel owner event loop invalid. id: " << m_id;
         return false;
     }
 
     // 移除channel
     if (!m_poller->removeChannel(channel)) {
-        LOG_ERROR << "Eventloop remove channel error. remove poller channel failed. thread id: " << m_threadId;
+        LOG_ERROR << "Eventloop remove channel error. remove poller channel failed. id: " << m_id;
         return false;
     }
     return true;
@@ -218,7 +216,7 @@ bool EventLoop::removeChannel(const ChannelPtr& channel) const {
 bool EventLoop::executeTask(const Task& task) {
     // 任务有效性校验
     if (nullptr == task) {
-        LOG_ERROR << "Eventloop execute task error. task invalid. thread id: " << m_threadId;
+        LOG_ERROR << "Eventloop execute task error. task invalid. id: " << m_id;
         return false;
     }
 
@@ -238,7 +236,7 @@ bool EventLoop::executeTask(const Task& task) {
 bool EventLoop::executeTaskInLoop(const Task& task, bool highPriority) {
     // 任务有效性校验
     if (nullptr == task) {
-        LOG_ERROR << "Eventloop execute task in loop error. task invalid. thread id: " << m_threadId;
+        LOG_ERROR << "Eventloop execute task in loop error. task invalid. id: " << m_id;
         return false;
     }
 
@@ -258,20 +256,20 @@ bool EventLoop::executeTaskInLoop(const Task& task, bool highPriority) {
     if (!this->isInCurrentThread() || m_waiting) {
         // 如果当前线程不是EventLoop所在线程或者当前EventLoop正在等待，则唤醒
         if (!this->wakeup()) {
-            LOG_ERROR << "Eventloop execute task in loop error. wakeup failed. thread id: " << m_threadId;
+            LOG_ERROR << "Eventloop execute task in loop error. wakeup failed. id: " << m_id;
         }
     }
 
     return true;
 }
 
-bool EventLoop::addTimerAtSpecificTime(TimerQueue::TimerId& id, TimerTask::Task cb, Timestamp expires, double intervalSec) const {
-    return m_timerQueue->addTimerTask(id, std::move(cb), std::move(expires), intervalSec);
+bool EventLoop::addTimerAtSpecificTime(TimerQueue::TimerId& id, const TimerTask::Task& cb, Timestamp expires, double intervalSec) const {
+    return m_timerQueue->addTimerTask(id, cb, expires, intervalSec);
 }
 
-bool EventLoop::addTimerAfterSpecificTime(TimerQueue::TimerId& id, TimerTask::Task cb, double delay, double intervalSec) const {
+bool EventLoop::addTimerAfterSpecificTime(TimerQueue::TimerId& id, const TimerTask::Task& cb, double delay, double intervalSec) const {
     auto firstRunTime = std::chrono::system_clock::now() + std::chrono::milliseconds(static_cast<int64_t>(delay * 1000));
-    return m_timerQueue->addTimerTask(id, std::move(cb), firstRunTime, intervalSec);
+    return m_timerQueue->addTimerTask(id, cb, firstRunTime, intervalSec);
 }
 
 bool EventLoop::delTimer(TimerId id) const {

@@ -26,7 +26,7 @@ public:
     using TaskList = std::list<Task>;
 
 public:
-    explicit EventLoop(std::thread::id threadId);
+    explicit EventLoop(std::string  id);
     ~EventLoop();
 
 public:
@@ -86,7 +86,7 @@ public:
      * @param  expires 定时器到期时间
      * @param  intervalSec 定时器任务间隔(单位: 秒)
      */
-    bool addTimerAtSpecificTime(TimerId& id, TimerTaskCb cb, Timestamp expires, double intervalSec = 0) const;
+    bool addTimerAtSpecificTime(TimerId& id, const TimerTaskCb& cb, Timestamp expires, double intervalSec = 0) const;
 
     /**
      * @brief  添加定时器任务
@@ -96,7 +96,7 @@ public:
      * @param  delay 定时器任务延迟(单位: 秒)
      * @param  intervalSec 定时器任务间隔(单位: 秒)
      */
-    bool addTimerAfterSpecificTime(TimerId& id, TimerTaskCb cb, double delay, double intervalSec = 0) const;
+    bool addTimerAfterSpecificTime(TimerId& id, const TimerTaskCb& cb, double delay, double intervalSec = 0) const;
 
     /**
      * @brief  移除定时器任务
@@ -130,14 +130,6 @@ public:
         return m_threadId == std::this_thread::get_id();
     }
 
-    /**
-     * @brief  获取事件循环所在线程id
-     * @return 线程id
-     */
-    inline std::thread::id getThreadId() const {
-        return m_threadId;
-    }
-
 private:
     /**
      * @brief  初始化eventLoop
@@ -152,6 +144,9 @@ private:
     bool handleTask();
 
 private:
+    // 事件循环对象id
+    std::string m_id;
+
     // 事件循环所在线程id
     std::thread::id m_threadId;
 

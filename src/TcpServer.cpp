@@ -7,12 +7,8 @@ namespace App {
 TcpServer::TcpServer(Address::Ptr addr, const ThreadInitCb& cb, unsigned int numWorkThreads, bool reuseport)
     : m_isStarted(false),
       m_addr(std::move(addr)),
+      m_isReusePort(reuseport),
       m_workLoopThreadPool(std::make_shared<EventLoopThreadPool>(numWorkThreads, cb)) {
-
-    // 创建acceptor
-    EventLoop::WkPtr mainLoop;
-    m_workLoopThreadPool->getMainEventLoop(mainLoop);
-    m_acceptor = std::make_shared<TcpAcceptor>(mainLoop, m_addr, reuseport);
 }
 
 TcpServer::~TcpServer() {
@@ -30,8 +26,10 @@ void TcpServer::run() {
         m_isStarted = true;
     }
 
+    // 创建acceptor
     EventLoop::WkPtr mainLoop;
     m_workLoopThreadPool->getMainEventLoop(mainLoop);
+    m_acceptor = std::make_shared<TcpAcceptor>(mainLoop, m_addr, m_isReusePort);
 
     auto weakSelf = this->weak_from_this();
     mainLoop.lock()->executeTask([weakSelf]() {

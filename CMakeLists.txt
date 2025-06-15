@@ -68,7 +68,7 @@ else()
 endif (BUILD_TESTS)
 
 # 案例程序
-option(BUILD_EXAMPLES "Build Examples" OFF)
+option(BUILD_EXAMPLES "Build Examples" ON)
 
 if (BUILD_EXAMPLES)
     message("Build Examples Enabled")

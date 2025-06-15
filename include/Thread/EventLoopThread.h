@@ -20,7 +20,7 @@ public:
     using ThreadPtr = std::shared_ptr<std::thread>;
 
 public:
-    explicit EventLoopThread(ThreadInitCb cb = nullptr);
+    explicit EventLoopThread(std::string  id, ThreadInitCb cb = nullptr);
     ~EventLoopThread();
 
 public:
@@ -61,11 +61,14 @@ public:
     }
 
 private:
-    // 事件循环线程
-    ThreadPtr m_thread;
+    // 事件线程对象id
+    std::string m_id;
 
     // 事件循环线程互斥锁
     std::mutex m_mutex;
+
+    // 事件循环线程
+    ThreadPtr m_thread;
 
     // 事件循环线程id
     std::thread::id m_threadId;

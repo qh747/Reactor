@@ -74,6 +74,9 @@ private:
     // 服务启动状态
     std::atomic_bool m_isStarted;
 
+    // 是否启用端口复用
+    std::atomic_bool m_isReusePort;
+
     // 本端地址
     Address::Ptr m_addr;
 

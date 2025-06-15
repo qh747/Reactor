@@ -1,3 +1,4 @@
+#include <sstream>
 #include "Utils/Logger.h"
 #include "Thread/EventLoopThread.h"
 #include "Thread/EventLoopThreadPool.h"
@@ -7,15 +8,21 @@ namespace Thread {
 static uint64_t EVENT_LOOP_THREAD_POOL_ID_KEY = 0;
 
 EventLoopThreadPool::EventLoopThreadPool(unsigned int numWorkThreads, const ThreadInitCb& cb)
-    : m_id("EVENT_LOOP_THREAD_POOL_" + std::to_string(++EVENT_LOOP_THREAD_POOL_ID_KEY)) {
+    : m_id("EV_LOOP_THD_POOL_" + std::to_string(++EVENT_LOOP_THREAD_POOL_ID_KEY)) {
     // 创建线程
     {
+        int threadIdx = 1;
+        std::stringstream ss;
+        ss << m_id << "-MAIN_THD_" << threadIdx;
+
         // 创建主线程
-        m_eventLoopMainThread = std::make_shared<EventLoopThread>(cb);
+        m_eventLoopMainThread = std::make_shared<EventLoopThread>(ss.str(), cb);
 
         // 创建工作线程
         for (unsigned int i = 0; i < numWorkThreads; ++i) {
-            m_eventLoopWorkThreads.emplace_back(std::make_shared<EventLoopThread>(cb));
+            ss.str("");
+            ss << m_id << "-WORK_THD_" << threadIdx++;
+            m_eventLoopWorkThreads.emplace_back(std::make_shared<EventLoopThread>(ss.str(), cb));
         }
     }
 
@@ -34,8 +41,6 @@ EventLoopThreadPool::EventLoopThreadPool(unsigned int numWorkThreads, const Thre
 }
 
 EventLoopThreadPool::~EventLoopThreadPool() {
-    LOG_DEBUG << "EventLoopThreadPool deconstruct. numThreads: " << m_eventLoopWorkThreads.size() << ". id: " << m_id;
-
     // 退出主线程
     m_eventLoopMainThread->quit();
 
@@ -43,6 +48,8 @@ EventLoopThreadPool::~EventLoopThreadPool() {
     for (auto& loop : m_eventLoopWorkThreads) {
         loop->quit();
     }
+
+    LOG_DEBUG << "EventLoopThreadPool deconstruct. numThreads: " << m_eventLoopWorkThreads.size() << ". id: " << m_id;
 }
 
 bool EventLoopThreadPool::getMainEventLoop(Net::EventLoopWkPtr& eventLoop) const {
@@ -51,6 +58,7 @@ bool EventLoopThreadPool::getMainEventLoop(Net::EventLoopWkPtr& eventLoop) const
         return false;
     }
 
+    m_eventLoopMainThread->getEventLoop(eventLoop);
     return true;
 }
 

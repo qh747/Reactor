@@ -121,11 +121,28 @@ bool DirHelper::CheckDirectoryExists(const std::string& path) {
 }
 
 bool DirHelper::CreateDirectory(const std::string& path) {
-    if (mkdir(path.c_str(), 0755) == -1) {
-        return false;
+    return mkdir(path.c_str(), 0755) == -1;
+}
+
+Event_t EventHelper::ConvertToEventType(uint32_t type) {
+    int result = 0;
+    if (POLLIN == type || POLLPRI == type || POLLRDHUP == type) {
+        result |= static_cast<int>(Event_t::EvTypeRead);
     }
 
-    return true;
+    if (POLLOUT == type) {
+        result |= static_cast<int>(Event_t::EvTypeWrite);
+    }
+
+    if (POLLHUP == type || POLLNVAL == type) {
+        result |= static_cast<int>(Event_t::EvTypeClose);
+    }
+
+    if (POLLERR == type) {
+        result |= static_cast<int>(Event_t::EvTypeError);
+    }
+
+    return static_cast<Event_t>(result);
 }
 
 } // namespace Utils

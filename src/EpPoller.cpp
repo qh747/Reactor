@@ -11,7 +11,7 @@ using namespace Utils;
 namespace Net {
 
 EpPoller::EpPoller(EventLoop::WkPtr loop)
-    : Poller(std::move(loop)),
+    : Poller(std::move(loop), "EPOLL_"),
       m_epollFd(epoll_create1(EPOLL_CLOEXEC)),
       m_epollEventList(POLL_INIT_WAIT_EVENTS_SIZE) {
     // 创建失败，程序退出
@@ -57,7 +57,7 @@ Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int&
             }
 
             // 添加活跃的channel
-            auto evType = static_cast<Event_t>(event.events);
+            auto evType = EventHelper::ConvertToEventType(event.events);
             activeChannels.emplace_back(std::make_shared<ChannelWrapper>(channelMapIter->second, evType));
 
             LOG_DEBUG << "Epoll poll success. id: " << m_id << " fd: " << event.data.fd << " event type: "
@@ -65,7 +65,7 @@ Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int&
         }
 
         // 判断是否需要对epoll event列表扩容
-        if (activeEventSize == m_epollEventList.size()) {
+        if (activeEventSize >= m_epollEventList.size()) {
             m_epollEventList.resize(m_epollEventList.size() * 2);
         }
     }

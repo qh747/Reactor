@@ -18,7 +18,7 @@ public:
     using WkPtr = std::weak_ptr<Poller>;
 
 public:
-    explicit Poller(EventLoopWkPtr loop);
+    explicit Poller(EventLoopWkPtr loop, const std::string& namePrefix);
     virtual ~Poller() = default;
 
 public:

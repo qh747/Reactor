@@ -9,7 +9,7 @@ using namespace Utils;
 namespace Net {
 
 PPoller::PPoller(EventLoopWkPtr loop)
-    : Poller(std::move(loop)) {
+    : Poller(std::move(loop), "PPOLL_") {
     LOG_DEBUG << "Poll poller construct. id: " << m_id;
 }
 
@@ -65,7 +65,7 @@ Timestamp PPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& 
             }
 
             // 添加活跃的channel
-            auto evType = static_cast<Event_t>(event.events);
+            auto evType = EventHelper::ConvertToEventType(event.events);
             activeChannels.emplace_back(std::make_shared<ChannelWrapper>(channelMapIter->second, evType));
 
             LOG_DEBUG << "Poll poll success. id: " << m_id << " fd: " << event.fd << " event type: "

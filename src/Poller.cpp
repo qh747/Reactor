@@ -6,8 +6,8 @@ namespace Net {
 
 static uint64_t POLLER_ID_KEY = 0;
 
-Poller::Poller(EventLoop::WkPtr loop)
-    : m_id("POLLER_" + std::to_string(++POLLER_ID_KEY)),
+Poller::Poller(EventLoop::WkPtr loop, const std::string& namePrefix)
+    : m_id(namePrefix + std::to_string(++POLLER_ID_KEY)),
       m_ownerLoop(std::move(loop)) {
 }
 

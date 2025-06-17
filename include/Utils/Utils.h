@@ -122,4 +122,17 @@ public:
     static bool CreateDirectory(const std::string& path);
 };
 
+/**
+ * @brief 事件帮助类
+ */
+class EventHelper : public NoncopyableConstructable {
+public:
+    /**
+     * @brief  转换事件类型
+     * @return 事件类型
+     * @param  type 事件类型
+     */
+    static Event_t ConvertToEventType(uint32_t type);
+};
+
 }; // namespace Utils

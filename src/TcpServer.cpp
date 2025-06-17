@@ -6,8 +6,8 @@ namespace App {
 
 TcpServer::TcpServer(Address::Ptr addr, const ThreadInitCb& cb, unsigned int numWorkThreads, bool reuseport)
     : m_isStarted(false),
-      m_addr(std::move(addr)),
       m_isReusePort(reuseport),
+      m_addr(std::move(addr)),
       m_workLoopThreadPool(std::make_shared<EventLoopThreadPool>(numWorkThreads, cb)) {
 }
 

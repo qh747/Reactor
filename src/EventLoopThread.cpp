@@ -58,17 +58,18 @@ void EventLoopThread::run() {
             if (nullptr != strongSelf->m_threadInitCb) {
                 strongSelf->m_threadInitCb(strongSelf->m_eventLoop);
             }
+
+            strongSelf->m_threadId = threadId;
         }
+
+        // 通知主线程事件循环创建完成
+        cv.notify_one();
 
         // 运行事件循环
         if (!strongSelf->m_eventLoop->loop()) {
             LOG_ERROR << "Event loop thread run error. event loop loop failed. id: " << strongSelf->m_id
                       << " thread id: " << threadId;
         }
-
-        // 通知主线程eventloop创建完成
-        strongSelf->m_threadId = threadId;
-        cv.notify_one();
     });
 
     {

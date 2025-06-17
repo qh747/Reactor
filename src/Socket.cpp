@@ -70,8 +70,10 @@ bool Socket::accept(Socket::Ptr& connSock) const {
     connSock = std::make_shared<Socket>(connfd, m_type);
 
     // 设置socket属性
-    Socketop::SetBlocking(connfd, Socketop::IsBlocking(m_fd));
     Socketop::SetCloexec(connfd, Socketop::IsCloexec(m_fd));
+    Socketop::SetBlocking(connfd, Socketop::IsBlocking(m_fd));
+    Socketop::SetReuseAddr(connfd, Socketop::IsReuseAddr(m_fd));
+    Socketop::SetReusePort(connfd, Socketop::IsReusePort(m_fd));
 
     // 设置socket地址
     std::string localIpAddr;

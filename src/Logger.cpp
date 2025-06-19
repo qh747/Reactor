@@ -22,6 +22,13 @@ public:
     void write(const std::string& str) {
         if (m_logFile.is_open()) {
             m_logFile << str;
+            m_logFile.flush();
+        }
+    }
+
+    ~LogFileWriter() {
+        if (m_logFile.is_open()) {
+            m_logFile.close();
         }
     }
 
@@ -45,16 +52,10 @@ private:
 
         // 创建日志文件
         std::string logFilePath = exeDir + "/log_" + TimeHelper::GetCurrentData() + ".log";
-        m_logFile.open(logFilePath, std::ios::app);
+        m_logFile.open(logFilePath, std::ios::out | std::ios::app);
         if (!m_logFile.is_open()) {
             std::cerr << "Create log file error. open log file failed" << std::endl;
             return;
-        }
-    }
-
-    ~LogFileWriter() {
-        if (m_logFile.is_open()) {
-            m_logFile.close();
         }
     }
 

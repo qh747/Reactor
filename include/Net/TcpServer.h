@@ -6,12 +6,14 @@
 #include "Net/Acceptor.h"
 #include "Net/Connection.h"
 #include "Thread/EventLoopThreadPool.h"
-using namespace Net;
 using namespace Utils;
 using namespace Thread;
 
-namespace App {
+namespace Net {
 
+/**
+ * @brief TCP服务器类
+ */
 class TcpServer : public Noncopyable, public std::enable_shared_from_this<TcpServer> {
 public:
     using Ptr = std::shared_ptr<TcpServer>;
@@ -62,6 +64,14 @@ public:
         m_writeCb = cb;
     }
 
+    /**
+     * @brief  获取服务信息
+     * @return 服务信息
+     */
+    inline std::string getServerInfo() const {
+        return m_addr->printIpPort();
+    }
+
 private:
     /**
      * @brief 新连接处理函数
@@ -99,4 +109,4 @@ private:
     WriteableCb m_writeCb;
 };
 
-}; // namespace App
+}; // namespace Net

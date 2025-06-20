@@ -1,8 +1,8 @@
 # 设置示例程序名称
-set(EXAMPLE_NAME ExampleTcpServer)
+set(EXAMPLE_NAME EchoServer)
 
 # 添加示例程序
-add_executable(${EXAMPLE_NAME} ExampleTcpServer.cpp)
+add_executable(${EXAMPLE_NAME} EchoServer.cpp)
 
 # 添加依赖
 if (BUILD_SHARED_REACTOR_LIB)

@@ -1,5 +1,6 @@
 #include <sstream>
 #include "Utils/Logger.h"
+#include "Common/ConfigDef.h"
 #include "Thread/EventLoopThread.h"
 #include "Thread/EventLoopThreadPool.h"
 
@@ -8,12 +9,12 @@ namespace Thread {
 static uint64_t EVENT_LOOP_THREAD_POOL_ID_KEY = 0;
 
 EventLoopThreadPool::EventLoopThreadPool(unsigned int numWorkThreads, const ThreadInitCb& cb)
-    : m_id("EV_LOOP_THD_POOL_" + std::to_string(++EVENT_LOOP_THREAD_POOL_ID_KEY)) {
+    : m_id(EV_LOOP_THD_POOL_PREFIX + std::to_string(++EVENT_LOOP_THREAD_POOL_ID_KEY)) {
     // 创建线程
     {
         int threadIdx = 1;
         std::stringstream ss;
-        ss << m_id << "-MAIN_THD_" << threadIdx;
+        ss << m_id << PREFIX_SIGN << EV_LOOP_MAIN_THD_PREFIX << threadIdx;
 
         // 创建主线程
         m_eventLoopMainThread = std::make_shared<EventLoopThread>(ss.str(), cb);
@@ -21,7 +22,7 @@ EventLoopThreadPool::EventLoopThreadPool(unsigned int numWorkThreads, const Thre
         // 创建工作线程
         for (unsigned int i = 0; i < numWorkThreads; ++i) {
             ss.str("");
-            ss << m_id << "-WORK_THD_" << threadIdx++;
+            ss << m_id << PREFIX_SIGN << EV_LOOP_WORK_THD_PREFIX << threadIdx++;
             m_eventLoopWorkThreads.emplace_back(std::make_shared<EventLoopThread>(ss.str(), cb));
         }
     }
@@ -64,8 +65,7 @@ bool EventLoopThreadPool::getMainEventLoop(Net::EventLoopWkPtr& eventLoop) const
 
 bool EventLoopThreadPool::getNextWorkEventLoop(Net::EventLoopWkPtr& eventLoop) const {
     if (m_eventLoopWorkThreads.empty()) {
-        LOG_ERROR << "Get next work event loop error. work thread invalid. id" << m_id;
-        return false;
+        return this->getMainEventLoop(eventLoop);
     }
 
     // 获取有效工作线程索引

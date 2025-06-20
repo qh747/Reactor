@@ -52,7 +52,7 @@ bool EventLoop::init() {
         m_wakeupChannel = std::make_shared<Channel>(this->weak_from_this(), wakeupFd);
 
         // 创建定时器队列
-        m_timerQueue = std::make_shared<TimerQueue>(this->weak_from_this(), m_id + "-TIME_QUEUE_1");
+        m_timerQueue = std::make_shared<TimerQueue>(this->weak_from_this(), m_id + PREFIX_SIGN + TIME_QUEUE_PREFIX + "1");
 
         // 创建I/O多路复用封装对象
         m_poller = PollerFactory::CreatePoller(POLLER_DEFAULT_TYPE, this->weak_from_this());

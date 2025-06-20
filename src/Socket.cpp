@@ -61,51 +61,20 @@ bool Socket::accept(Socket::Ptr& connSock) const {
     }
 
     int connfd = -1;
-    if (!Socketop::AcceptSocket(m_fd, m_localAddr, connfd)) {
+    Address::Ptr peerAddr;
+    if (!Socketop::AcceptSocket(m_fd, peerAddr, connfd)) {
         LOG_ERROR << "Socket accept error. addr: " << m_localAddr->printIpPort();
         return false;
     }
 
     // 创建socket
     connSock = std::make_shared<Socket>(connfd, m_type);
+    connSock->m_localAddr = this->m_localAddr;
+    connSock->m_peerAddr = peerAddr;
 
     // 设置socket属性
     Socketop::SetCloexec(connfd, Socketop::IsCloexec(m_fd));
     Socketop::SetBlocking(connfd, Socketop::IsBlocking(m_fd));
-    Socketop::SetReuseAddr(connfd, Socketop::IsReuseAddr(m_fd));
-    Socketop::SetReusePort(connfd, Socketop::IsReusePort(m_fd));
-
-    // 设置socket地址
-    std::string localIpAddr;
-    uint16_t localPort;
-    if (!Socketop::GetLocalIpAddrPort(connfd, localIpAddr, localPort)) {
-        LOG_ERROR << "Socket accept error. get local ip addr and port failed. addr: " << m_localAddr->printIpPort();
-        Socketop::CloseSocket(connfd);
-        return false;
-    }
-
-    std::string peerIpAddr;
-    uint16_t peerPort;
-    if (!Socketop::GetRemoteIpAddrPort(connfd, peerIpAddr, peerPort)) {
-        LOG_ERROR << "Socket accept error. get peer ip addr and port failed. addr: " << m_localAddr->printIpPort();
-        Socketop::CloseSocket(connfd);
-        return false;
-    }
-
-    Addr_t addrType;
-    if (!Socketop::GetSocketFamilyType(connfd, addrType)) {
-        LOG_ERROR << "Socket accept error. get address type failed. addr: " << m_localAddr->printIpPort();
-        Socketop::CloseSocket(connfd);
-        return false;
-    }
-
-    if (Addr_t::IPv4 == addrType) {
-        connSock->m_peerAddr = std::make_shared<IPv4Address>(localIpAddr, localPort);
-    }
-    else if (Addr_t::IPv6 == addrType) {
-        connSock->m_peerAddr = std::make_shared<IPv6Address>(localIpAddr, localPort);
-    }
-
     return true;
 }
 

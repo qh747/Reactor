@@ -1,22 +1,24 @@
 #include <iostream>
-#include <App/TcpServer.h>
-using namespace App;
+#include <Utils/Logger.h>
+#include <Net/TcpServer.h>
+using namespace Net;
+using namespace Utils;
 
-class ExampleTcpServer : public std::enable_shared_from_this<ExampleTcpServer> {
+class EchoServer : public std::enable_shared_from_this<EchoServer> {
 public:
-    using Ptr = std::shared_ptr<ExampleTcpServer>;
+    using Ptr = std::shared_ptr<EchoServer>;
 
 public:
-    ExampleTcpServer(const std::string& ip, uint16_t port) {
+    EchoServer(const std::string& ip, uint16_t port) {
         auto addr = std::make_shared<IPv4Address>(ip, port);
         m_server = std::make_shared<TcpServer>(addr, nullptr, 0);
 
         m_server->setConnectCallback([](const Connection::Ptr& conn, bool isConn) {
             if (isConn) {
-                std::cout << "new connection: " << conn->getConnectionInfo() << std::endl;
+                LOG_INFO << "new connection: " << conn->getConnectionInfo();
             }
             else {
-                std::cout << "connection closed: " << conn->getConnectionInfo() << std::endl;
+                LOG_INFO << "connection closed: " << conn->getConnectionInfo();
             }
         });
 
@@ -25,19 +27,20 @@ public:
             std::size_t len = 0;
 
             buf->read(buffer, len);
-            std::cout << "recv: " << std::string(buffer.begin(), buffer.end()) << std::endl;
+            LOG_INFO << "recv: " << std::string(buffer.begin(), buffer.end());
 
             conn->send(buffer.data(), len);
-            std::cout << "send: " << std::string(buffer.begin(), buffer.end()) << std::endl;
+            LOG_INFO << "send: " << std::string(buffer.begin(), buffer.end());
         });
     }
 
-    ~ExampleTcpServer() {
+    ~EchoServer() {
         m_server->shutdown();
     }
 
 public:
     void run() const {
+        LOG_INFO << "echo server run: " << m_server->getServerInfo();
         m_server->run();
     }
 
@@ -46,7 +49,7 @@ private:
 };
 
 int main() {
-    ExampleTcpServer::Ptr server = std::make_shared<ExampleTcpServer>("127.0.0.1", 8888);
+    EchoServer::Ptr server = std::make_shared<EchoServer>("127.0.0.1", 8881);
     server->run();
 
     char ch;

@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <cstddef>
 #include "Common/DataDef.h"
 
@@ -18,5 +19,15 @@ constexpr int BUFFER_INIT_SIZE = 1024;
 
 // 缓冲区预分配空间大小，单位：字节
 constexpr int BUFFER_PREPEND_SIZE = 8;
+
+// 命名前缀
+const std::string EV_LOOP_THD_POOL_PREFIX = "EV_LOOP_THD_POOL_";
+const std::string EV_LOOP_MAIN_THD_PREFIX = "MAIN_THD_";
+const std::string EV_LOOP_WORK_THD_PREFIX = "WORK_THD_";
+const std::string EV_LOOP_PREFIX = "EV_LOOP_";
+const std::string TIME_QUEUE_PREFIX = "TIME_QUEUE_";
+
+// 多级命名连接符
+const std::string PREFIX_SIGN = "@";
 
 }; // namespace Common

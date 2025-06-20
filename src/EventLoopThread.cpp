@@ -1,5 +1,6 @@
 #include <utility>
 #include <condition_variable>
+#include "Common/ConfigDef.h"
 #include "Utils/Logger.h"
 #include "Net/EventLoop.h"
 #include "Thread/EventLoopThread.h"
@@ -45,9 +46,12 @@ void EventLoopThread::run() {
 
         // 创建事件循环
         {
+            std::stringstream ss;
+            ss << PREFIX_SIGN << EV_LOOP_PREFIX << "1";
+
             std::lock_guard<std::mutex> lock(strongSelf->m_mutex);
 
-            strongSelf->m_eventLoop = std::make_shared<Net::EventLoop>(strongSelf->m_id + "-EV_LOOP_1");
+            strongSelf->m_eventLoop = std::make_shared<Net::EventLoop>(strongSelf->m_id + ss.str());
             if (!strongSelf->m_eventLoop->init()) {
                 LOG_ERROR << "Event loop thread run error. event loop init failed. id: " << strongSelf->m_id
                           << " thread id: " << threadId;

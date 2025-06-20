@@ -49,10 +49,10 @@ public:
      * @brief  接受连接
      * @return 接受连接结果
      * @param  fd 套接字描述符
-     * @param  addr 地址
+     * @param  peerAddr 对端地址
      * @param  connfd 连接套接字描述符
      */
-    static bool AcceptSocket(int fd, const Address::Ptr& addr, int& connfd);
+    static bool AcceptSocket(int fd, Address::Ptr& peerAddr, int& connfd);
 
     /**
      * @brief  连接socket

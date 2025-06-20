@@ -59,19 +59,33 @@ bool Socketop::ListenSocket(int fd, int backlog) {
     return true;
 }
 
-bool Socketop::AcceptSocket(int fd, const Address::Ptr& addr, int& connfd) {
-    if (fd < 0 || !addr->valid()) {
+bool Socketop::AcceptSocket(int fd, Address::Ptr& peerAddr, int& connfd) {
+    if (fd < 0) {
         LOG_ERROR << "Socket accept error. invalid input param: " << fd;
         return false;
     }
 
     sockaddr sockAddr = {};
-    addr->getSockAddr(sockAddr);
     socklen_t sockLen = sizeof(sockAddr);
 
     if ((connfd = ::accept(fd, &sockAddr, &sockLen) < 0)) {
         LOG_ERROR << "Socket accept error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
         return false;
+    }
+
+    Addr_t addrType;
+    if (!Socketop::GetSocketFamilyType(fd, addrType)) {
+        LOG_ERROR << "Socket accept error. Get socket family type error. fd: " << fd;
+
+        ::close(connfd);
+        return false;
+    }
+
+    if (Addr_t::IPv4 == addrType) {
+        peerAddr = std::make_shared<IPv4Address>(*reinterpret_cast<sockaddr_in*>(&sockAddr));
+    }
+    else {
+        peerAddr = std::make_shared<IPv6Address>(*reinterpret_cast<sockaddr_in6*>(&sockAddr));
     }
     return true;
 }
@@ -589,13 +603,6 @@ ssize_t Socketop::Readv(int fd, const struct iovec* iov, int iovcnt) {
     return ::readv(fd, iov, iovcnt);
 }
 
-/**
- * @brief  写入数据
- * @return 写入数据结果
- * @param  fd 套接字描述符
- * @param  buf 缓冲区
- * @param  len 缓冲区长度
- */
 ssize_t Socketop::Write(int fd, const void* buf, size_t len) {
     return ::write(fd, buf, len);
 }

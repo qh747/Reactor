@@ -34,8 +34,10 @@ void EventLoopThread::run() {
 
     // 创建事件循环线程
     std::condition_variable cv;
+    std::atomic_bool waitReady(false);
+
     auto weakSelf = this->weak_from_this();
-    m_thread = std::make_shared<std::thread>([weakSelf, &cv]() {
+    m_thread = std::make_shared<std::thread>([weakSelf, &cv, &waitReady]() {
         auto threadId = std::this_thread::get_id();
         auto strongSelf = weakSelf.lock();
 
@@ -49,12 +51,17 @@ void EventLoopThread::run() {
             std::stringstream ss;
             ss << PREFIX_SIGN << EV_LOOP_PREFIX << "1";
 
+            // 确保等待线程先获得互斥锁
+            while (!waitReady) {
+                std::this_thread::yield();
+            }
+
             std::lock_guard<std::mutex> lock(strongSelf->m_mutex);
 
             strongSelf->m_eventLoop = std::make_shared<Net::EventLoop>(strongSelf->m_id + ss.str());
             if (!strongSelf->m_eventLoop->init()) {
                 LOG_ERROR << "Event loop thread run error. event loop init failed. id: " << strongSelf->m_id
-                          << " thread id: " << threadId;
+                    << " thread id: " << threadId;
                 return;
             }
 
@@ -72,13 +79,14 @@ void EventLoopThread::run() {
         // 运行事件循环
         if (!strongSelf->m_eventLoop->loop()) {
             LOG_ERROR << "Event loop thread run error. event loop loop failed. id: " << strongSelf->m_id
-                      << " thread id: " << threadId;
+                << " thread id: " << threadId;
         }
     });
 
     {
         // 等待eventloop创建完成
         std::unique_lock<std::mutex> lock(m_mutex);
+        waitReady = true;
         cv.wait(lock);
     }
 
@@ -108,7 +116,6 @@ void EventLoopThread::quit() {
         if (m_thread->joinable()) {
             m_thread->join();
         }
-
         m_thread.reset();
     }
 

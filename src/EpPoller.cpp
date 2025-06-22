@@ -61,7 +61,7 @@ Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int&
             activeChannels.emplace_back(std::make_shared<ChannelWrapper>(channelMapIter->second, evType));
 
             LOG_DEBUG << "Epoll poll success. id: " << m_id << " fd: " << event.data.fd << " event type: "
-                      << StringHelper::EventTypeToString(evType) << ".";
+                << StringHelper::EventTypeToString(evType) << ".";
         }
 
         // 判断是否需要对epoll event列表扩容
@@ -118,13 +118,12 @@ bool EpPoller::updateChannel(Channel::Ptr channel) {
     }
     else {
         LOG_ERROR << "Update channel error. channel state invalid. id: " << m_id << " fd: " << fd
-                  << " state: " << StringHelper::StateTypeToString(state)
-                  << " event type: " << StringHelper::EventTypeToString(evType) << ".";
+            << " state: " << StringHelper::StateTypeToString(state) << " event type: " << StringHelper::EventTypeToString(evType) << ".";
         return false;
     }
 
     LOG_INFO << "Update channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
-             << " event type: " << StringHelper::EventTypeToString(evType) << ".";
+        << " event type: " << StringHelper::EventTypeToString(evType) << ".";
     return true;
 }
 

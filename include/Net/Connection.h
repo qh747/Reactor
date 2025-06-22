@@ -266,7 +266,7 @@ public:
 
 public:
     TcpConnection(const EventLoopWkPtr& loop, const Socket::Ptr& sock);
-    ~TcpConnection() override = default;
+    ~TcpConnection() override;
 
 public:
     /**

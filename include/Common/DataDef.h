@@ -47,10 +47,9 @@ typedef enum class StateType : int {
  */
 typedef enum class ConnStateType : int {
     ConnStateClosed = 0,
-    ConnStateOpened = 1,
-    ConnStateConnected = 2,
-    ConnStateDisconnected = 3,
-    ConnStateError = 4
+    ConnStateConnected = 1,
+    ConnStateDisconnected = 2,
+    ConnStateError = 3
 
 } ConnState_t;
 

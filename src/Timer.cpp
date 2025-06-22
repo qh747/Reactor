@@ -142,6 +142,9 @@ bool TimerQueue::init() {
         LOG_WARN << "Timer queue init warning. initialized already. id: " << m_id;
         return true;
     }
+    else {
+        m_isInit = true;
+    }
 
     // 创建timer channel
     int timerfd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -154,7 +157,7 @@ bool TimerQueue::init() {
     // 设置timer channel的读事件回调函数
     std::string id = m_id;
     auto weakSelf = this->weak_from_this();
-    m_isInit = m_timerChannel->setEventCb(Event_t::EvTypeRead, [weakSelf, id](Timestamp recvTime) {
+    m_timerChannel->setEventCb(Event_t::EvTypeRead, [weakSelf, id](Timestamp recvTime) {
         (void)recvTime;
 
         if (weakSelf.expired()) {
@@ -169,7 +172,13 @@ bool TimerQueue::init() {
         }
     });
 
-    return m_isInit;
+    if (!m_timerChannel->open(Event_t::EvTypeRead)) {
+        LOG_ERROR << "Timer queue init error. timer channel open failed. id: " << m_id;
+        return false;
+    }
+
+    LOG_DEBUG << "Timer queue init success. id: " << m_id;
+    return true;
 }
 
 bool TimerQueue::handleTask() {

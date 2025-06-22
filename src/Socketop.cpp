@@ -68,7 +68,8 @@ bool Socketop::AcceptSocket(int fd, Address::Ptr& peerAddr, int& connfd) {
     sockaddr sockAddr = {};
     socklen_t sockLen = sizeof(sockAddr);
 
-    if ((connfd = ::accept(fd, &sockAddr, &sockLen) < 0)) {
+    connfd = ::accept(fd, &sockAddr, &sockLen);
+    if (connfd < 0) {
         LOG_ERROR << "Socket accept error. fd: " << fd << " errno: " << errno << ". error: " << strerror(errno);
         return false;
     }

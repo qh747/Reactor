@@ -93,6 +93,7 @@ bool EventLoop::init() {
         }
     }
 
+    LOG_DEBUG << "Eventloop init success. id: " << m_id << " thread id: " << m_threadId;
     return true;
 }
 

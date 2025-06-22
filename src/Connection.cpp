@@ -80,12 +80,12 @@ bool Connection::open() {
     });
 
     // 打开channel
-    if (!m_channel->open(Event_t::EvTypeAll)) {
+    if (!m_channel->open(Event_t::EvTypeRead)) {
         LOG_ERROR << "Connection open error. open channel failed. " << this->getConnectionInfo();
         return false;
     }
 
-    m_connState.store(ConnState_t::ConnStateOpened);
+    m_connState.store(ConnState_t::ConnStateConnected);
     return true;
 }
 
@@ -94,11 +94,6 @@ bool Connection::reconnect() {
         // 连接已经建立
         LOG_WARN << "Connection connect warning. connection already connected. " << this->getConnectionInfo();
         return true;
-    }
-    else if (ConnState_t::ConnStateOpened != m_connState) {
-        // 连接未打开
-        LOG_ERROR << "Connection connect error. connection not opened. " << this->getConnectionInfo();
-        return false;
     }
 
     // 执行连接建立回调函数
@@ -117,7 +112,7 @@ bool Connection::reconnect() {
         }
     }
 
-    m_channel->enableRead();
+    m_channel->setReadEnabled(true);
     m_connState.store(ConnState_t::ConnStateConnected);
     return true;
 }
@@ -241,7 +236,7 @@ bool Connection::send(const void* data, std::size_t size) {
     // 数据写入缓存
     m_outBuf->write(static_cast<const uint8_t*>(data) + writeSize, size);
     if (!m_channel->writeEnabled()) {
-        m_channel->enableWrite();
+        m_channel->setWriteEnabled(true);
     }
 
     return true;
@@ -259,7 +254,7 @@ std::string Connection::getConnectionInfo() const {
 }
 
 bool Connection::enableRead() {
-    if (ConnState_t::ConnStateConnected != m_connState && ConnState_t::ConnStateOpened == m_connState) {
+    if (ConnState_t::ConnStateConnected != m_connState) {
         LOG_ERROR << "Connection enable read error. connection not opened. " << this->getConnectionInfo();
         return false;
     }
@@ -271,13 +266,13 @@ bool Connection::enableRead() {
 
     auto loop = m_ownerLoop.lock();
     if (loop->isInCurrentThread()) {
-        m_channel->enableRead();
+        m_channel->setReadEnabled(true);
     }
     else {
         auto weakSelf = this->weak_from_this();
         loop->executeTaskInLoop([weakSelf]() {
             if (!weakSelf.expired()) {
-                weakSelf.lock()->m_channel->enableRead();
+                weakSelf.lock()->m_channel->setReadEnabled(true);
             }
         });
     }
@@ -286,7 +281,7 @@ bool Connection::enableRead() {
 }
 
 bool Connection::disableRead() {
-    if (ConnState_t::ConnStateConnected != m_connState && ConnState_t::ConnStateOpened == m_connState) {
+    if (ConnState_t::ConnStateConnected != m_connState) {
         LOG_ERROR << "Connection disable read error. connection not opened. " << this->getConnectionInfo();
         return false;
     }
@@ -298,13 +293,13 @@ bool Connection::disableRead() {
 
     auto loop = m_ownerLoop.lock();
     if (loop->isInCurrentThread()) {
-        m_channel->disableRead();
+        m_channel->setReadEnabled(false);
     }
     else {
         auto weakSelf = this->weak_from_this();
         loop->executeTaskInLoop([weakSelf]() {
             if (!weakSelf.expired()) {
-                weakSelf.lock()->m_channel->disableRead();
+                weakSelf.lock()->m_channel->setReadEnabled(false);
             }
         });
     }
@@ -323,6 +318,11 @@ TcpConnection::TcpConnection(const EventLoopWkPtr& loop, const Socket::Ptr& sock
 
     // 设置tcp socket属性
     m_sock->setKeepaliveEnabled(true);
+    LOG_DEBUG << "TcpConnection construct. " << this->getConnectionInfo();
+}
+
+TcpConnection::~TcpConnection() {
+    LOG_DEBUG << "TcpConnection deconstruct. " << this->getConnectionInfo();
 }
 
 bool TcpConnection::send(const void* data, std::size_t size) {
@@ -371,7 +371,6 @@ bool TcpConnection::send(const void* data, std::size_t size) {
                     return false;
                 }
             }
-
             writeSize = 0;
         }
     }
@@ -391,9 +390,8 @@ bool TcpConnection::send(const void* data, std::size_t size) {
     // 数据写入缓存
     m_outBuf->write(static_cast<const uint8_t*>(data) + writeSize, size);
     if (!m_channel->writeEnabled()) {
-        m_channel->enableWrite();
+        m_channel->setWriteEnabled(true);
     }
-
     return true;
 }
 
@@ -433,7 +431,7 @@ bool TcpConnection::shutdown() {
 
 void TcpConnection::handleRead(Timestamp recvTime) {
     int errCode = 0;
-    auto readSize = m_inBuf->readFd(m_sock->getFd(), errCode);
+    auto readSize= m_inBuf->readFd(m_sock->getFd(), errCode);
 
     if (readSize > 0) {
         // 调用读回调函数
@@ -462,7 +460,7 @@ void TcpConnection::handleWrite(Timestamp recvTime) {
     if (writeSize > 0) {
         if (0 == m_outBuf->readableBytes()) {
             // 写完数据后，关闭写事件
-            m_channel->disableWrite();
+            m_channel->setWriteEnabled(false);
 
             // 调用写回调函数
             if (nullptr != m_writeCb) {

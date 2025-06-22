@@ -31,11 +31,14 @@ Acceptor::Acceptor(EventLoop::WkPtr loop, const Address::Ptr& addr, const Socket
 
     // 创建channel
     m_channel = std::make_shared<Channel>(m_ownerLoop, fd);
+    LOG_DEBUG << "Acceptor construct. fd: " << fd << " addr: " << addr->printIpPort();
 }
 
 Acceptor::~Acceptor() {
     m_channel->close();
     ::close(m_idleFd);
+
+    LOG_DEBUG << "Acceptor deconstruct. fd: " << m_sock->getFd() << " addr: " << m_addr->printIpPort();
 }
 
 void Acceptor::listen() {
@@ -78,7 +81,7 @@ void TcpAcceptor::handleRead(Timestamp recvTime) {
     Socket::Ptr connSock;
     if (!m_sock->accept(connSock)) {
         LOG_ERROR << "TcpAcceptor handleRead error. accept failed. addr: " << m_addr->printIpPort() << " errno: "
-                  << errno << " error: " << strerror(errno);
+            << errno << " error: " << strerror(errno);
 
         // 连接数量达到上限
         if (EMFILE == errno) {

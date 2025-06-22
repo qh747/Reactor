@@ -60,7 +60,7 @@ std::string StringHelper::EventTypeToString(Event_t event) {
         {Event_t::EvTypeCloseError, "Close | Error"},
         {Event_t::EvTypeReadWriteClose, "Read | Write | Close"},
         {Event_t::EvTypeReadWriteError, "Read | Write | Error"},
-        {Event_t::EvTypeReadCloseError, "Close | Error"},
+        {Event_t::EvTypeReadCloseError, "Read | Close | Error"},
         {Event_t::EvTypeWriteCloseError, "Write | Close | Error"},
         {Event_t::EvTypeAll, "Read | Write | Close | Error"}};
 

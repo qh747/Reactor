@@ -9,12 +9,16 @@ TcpServer::TcpServer(Address::Ptr addr, const ThreadInitCb& cb, unsigned int num
       m_isReusePort(reuseport),
       m_addr(std::move(addr)),
       m_workLoopThreadPool(std::make_shared<EventLoopThreadPool>(numWorkThreads, cb)) {
+
+    LOG_DEBUG << "Tcp server construct. server info: " << m_addr->printIpPort();
 }
 
 TcpServer::~TcpServer() {
     if (m_isStarted) {
         this->shutdown();
     }
+
+    LOG_DEBUG << "Tcp server destruct. server info: " << m_addr->printIpPort();
 }
 
 void TcpServer::run() {
@@ -80,7 +84,7 @@ void TcpServer::onNewConnection(Socket::Ptr& connSock, Timestamp recvTime) {
     m_workLoopThreadPool->getMainEventLoop(mainLoop);
 
     auto weakSelf = this->weak_from_this();
-    conn->setCloseCallback([weakSelf, mainLoop](const Connection::Ptr& conn)  {
+    conn->setCloseCallback([weakSelf, mainLoop](const Connection::Ptr& conn) {
         // 关闭连接
         conn->close(0);
 

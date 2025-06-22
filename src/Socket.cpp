@@ -24,7 +24,7 @@ bool Socket::bind(const Address::Ptr& addr) {
     // socket地址已绑定
     if (this->isLocalAddrValid()) {
         LOG_WARN << "Socket bind address warning. address already bound. new addr: " << addr->printIpPort()
-                 << " old addr: " << m_localAddr->printIpPort();
+            << " old addr: " << m_localAddr->printIpPort();
         return true;
     }
 
@@ -60,7 +60,7 @@ bool Socket::accept(Socket::Ptr& connSock) const {
         return false;
     }
 
-    int connfd = -1;
+    int connfd = 0;
     Address::Ptr peerAddr;
     if (!Socketop::AcceptSocket(m_fd, peerAddr, connfd)) {
         LOG_ERROR << "Socket accept error. addr: " << m_localAddr->printIpPort();

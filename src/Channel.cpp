@@ -52,7 +52,7 @@ bool Channel::open(Event_t type) {
     // 事件类型校验
     if (ValidEvents.end() == ValidEvents.find(type)) {
         LOG_ERROR << "Channel open error. invalid event type. fd: " << m_fd << " event type: "
-                  << StringHelper::EventTypeToString(type);
+            << StringHelper::EventTypeToString(type);
         return false;
     }
 
@@ -66,14 +66,20 @@ bool Channel::open(Event_t type) {
     m_listenEvType = type;
 
     // 在事件循环中更新channel
-    return m_ownerLoop.lock()->updateChannel(this->shared_from_this());
+    if (!m_ownerLoop.lock()->updateChannel(this->shared_from_this())) {
+        LOG_ERROR << "Channel open error. update channel failed. fd: " << m_fd;
+        return false;
+    }
+
+    LOG_DEBUG << "Channel open success. fd: " << m_fd << " event type: " << StringHelper::EventTypeToString(type);
+    return true;
 }
 
 bool Channel::update(Event_t type) {
     // 事件类型校验
     if (ValidEvents.end() == ValidEvents.find(type)) {
         LOG_ERROR << "Channel update error. invalid event type. fd: " << m_fd << " event type: "
-                  << StringHelper::EventTypeToString(type);
+            << StringHelper::EventTypeToString(type);
         return false;
     }
 
@@ -87,7 +93,13 @@ bool Channel::update(Event_t type) {
     m_listenEvType = type;
 
     // 在事件循环中更新channel
-    return m_ownerLoop.lock()->updateChannel(this->shared_from_this());
+    if (!m_ownerLoop.lock()->updateChannel(this->shared_from_this())) {
+        LOG_ERROR << "Channel update error. update channel failed. fd: " << m_fd;
+        return false;
+    }
+
+    LOG_DEBUG << "Channel update success. fd: " << m_fd << " event type: " << StringHelper::EventTypeToString(type);
+    return true;
 }
 
 bool Channel::close() {
@@ -108,14 +120,14 @@ bool Channel::handleEvent(Event_t type, Timestamp recvTime) {
     // 事件类型校验
     if (ValidEvents.end() == ValidEvents.find(type)) {
         LOG_ERROR << "Channel handle event error. invalid event type. fd: " << m_fd << " event type: "
-                  << StringHelper::EventTypeToString(type);
+            << StringHelper::EventTypeToString(type);
         return false;
     }
 
     // channel未处于事件处理状态
     if (State_t::StatePending == m_state || Event_t::EvTypeNone == m_listenEvType) {
         LOG_ERROR << "Channel handle event error. channel not in handle event state. fd: " << m_fd << " event type: "
-                  << StringHelper::EventTypeToString(type);
+            << StringHelper::EventTypeToString(type);
         return false;
     }
 
@@ -150,8 +162,8 @@ bool Channel::handleEvent(Event_t type, Timestamp recvTime) {
     }
 
     LOG_ERROR << "Channel handle event error. event not handled. fd: " << m_fd
-              << " listen event type: " << StringHelper::EventTypeToString(m_listenEvType)
-              << " active event type: " << StringHelper::EventTypeToString(type);
+        << " listen event type: " << StringHelper::EventTypeToString(m_listenEvType)
+        << " active event type: " << StringHelper::EventTypeToString(type);
     return false;
 }
 
@@ -159,15 +171,15 @@ bool Channel::setEventCb(Event_t type, EventCb cb) {
     // 事件类型无效
     if (ValidCbEvents.end() == ValidCbEvents.find(type)) {
         LOG_ERROR << "Channel set event callback function error. support event type: "
-                  << "EvTypeRead | EvTypeWrite | EvTypeClose | EvTypeError | EvTypeReadWrite. "
-                  << "fd: " << m_fd << " event type: " << StringHelper::EventTypeToString(type);
+            << "EvTypeRead | EvTypeWrite | EvTypeClose | EvTypeError | EvTypeReadWrite. "
+            << "fd: " << m_fd << " event type: " << StringHelper::EventTypeToString(type);
         return false;
     }
 
     // 事件处理回调函数无效
     if (nullptr == cb) {
         LOG_ERROR << "Channel set event callback function error. event callback function invalid. fd: "
-                  << m_fd << " event type: " << StringHelper::EventTypeToString(type);
+            << m_fd << " event type: " << StringHelper::EventTypeToString(type);
         return false;
     }
 
@@ -175,15 +187,31 @@ bool Channel::setEventCb(Event_t type, EventCb cb) {
     return true;
 }
 
+void Channel::setWriteEnabled(bool enabled) {
+    int evType = enabled ?
+        static_cast<int>(m_listenEvType) | static_cast<int>(Event_t::EvTypeWrite) :
+        static_cast<int>(m_listenEvType) & (~static_cast<int>(Event_t::EvTypeWrite));
+
+    this->update(static_cast<Event_t>(evType));
+}
+
+void Channel::setReadEnabled(bool enabled) {
+    int evType = enabled ?
+        static_cast<int>(m_listenEvType) | static_cast<int>(Event_t::EvTypeRead) :
+        static_cast<int>(m_listenEvType) & (~static_cast<int>(Event_t::EvTypeRead));
+
+    this->update(static_cast<Event_t>(evType));
+}
+
 bool Channel::handleEventWithoutCheck(Event_t type, Timestamp recvTime) {
-    auto evCbIter = m_evCbMap.find(Event_t::EvTypeRead);
+    auto evCbIter = m_evCbMap.find(type);
     if (m_evCbMap.end() == evCbIter) {
         LOG_WARN << "Channel handle event warning. event callback function not regist. fd: "
-                 << m_fd << " event type: " << StringHelper::EventTypeToString(type);
+            << m_fd << " event type: " << StringHelper::EventTypeToString(type);
         return false;
     }
 
-    // 读事件处理
+    // 事件处理
     evCbIter->second(recvTime);
     LOG_INFO << "Channel handle event. fd: " << m_fd << " event type: " << StringHelper::EventTypeToString(type);
     return true;

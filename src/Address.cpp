@@ -210,7 +210,7 @@ bool IPv6Address::valid() const {
         return false;
     }
 
-    const uint32_t* addr = reinterpret_cast<const uint32_t*>(&m_addr.sin6_addr);
+    const auto* addr = reinterpret_cast<const uint32_t*>(&m_addr.sin6_addr);
 
     bool isZero = true;
     for (int i = 0; i < 4; ++i) {

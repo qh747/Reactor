@@ -11,7 +11,7 @@ public:
 public:
     EchoServer(const std::string& ip, uint16_t port) {
         auto addr = std::make_shared<IPv4Address>(ip, port);
-        m_server = std::make_shared<TcpServer>(addr, nullptr, 0);
+        m_server = std::make_shared<TcpServer>(addr, nullptr, 1);
 
         m_server->setConnectCallback([](const Connection::Ptr& conn, bool isConn) {
             if (isConn) {
@@ -49,7 +49,7 @@ private:
 };
 
 int main() {
-    EchoServer::Ptr server = std::make_shared<EchoServer>("127.0.0.1", 8881);
+    EchoServer::Ptr server = std::make_shared<EchoServer>("127.0.0.1", 9000);
     server->run();
 
     char ch;

@@ -69,7 +69,7 @@ Timestamp PPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& 
             activeChannels.emplace_back(std::make_shared<ChannelWrapper>(channelMapIter->second, evType));
 
             LOG_DEBUG << "Poll poll success. id: " << m_id << " fd: " << event.fd << " event type: "
-                      << StringHelper::EventTypeToString(evType) << ".";
+                << StringHelper::EventTypeToString(evType) << ".";
         }
     }
 
@@ -106,12 +106,12 @@ bool PPoller::updateChannel(Channel::Ptr channel) {
     }
     else {
         LOG_ERROR << "Update channel error. channel state invalid. id: " << m_id << " fd: " << fd << " state: "
-                  << StringHelper::StateTypeToString(state) << " event type: " << StringHelper::EventTypeToString(evType) << ".";
+            << StringHelper::StateTypeToString(state) << " event type: " << StringHelper::EventTypeToString(evType) << ".";
         return false;
     }
 
     LOG_INFO << "Update channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
-             << " event type: " << StringHelper::EventTypeToString(evType) << ".";
+        << " event type: " << StringHelper::EventTypeToString(evType) << ".";
     return true;
 }
 
@@ -132,7 +132,7 @@ bool PPoller::removeChannel(Channel::Ptr channel) {
     }
 
     LOG_INFO << "Remove channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
-             << " event type: " << StringHelper::EventTypeToString(channel->getEvType()) << ".";
+        << " event type: " << StringHelper::EventTypeToString(channel->getEvType()) << ".";
     return true;
 }
 

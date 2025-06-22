@@ -340,9 +340,9 @@ bool TcpConnection::send(const void* data, std::size_t size) {
     if (!m_channel->writeEnabled() && 0 == cachedSize) {
         writeSize = Socketop::Write(m_sock->getFd(), data, size);
         if (writeSize > 0) {
-            // 写入成功, 调用回调函数
             remainSize -= writeSize;
-            if (0 == remainSize && nullptr != m_writeCb) {
+            if (0 == remainSize) {
+                // 写入成功, 调用回调函数
                 if (nullptr != m_writeCb) {
                     auto weakSelf = this->weak_from_this();
                     m_ownerLoop.lock()->executeTask([weakSelf]() {
@@ -387,7 +387,7 @@ bool TcpConnection::send(const void* data, std::size_t size) {
         });
     }
 
-    // 数据写入缓存
+    // 剩余未未写入数据写入缓存
     m_outBuf->write(static_cast<const uint8_t*>(data) + writeSize, size);
     if (!m_channel->writeEnabled()) {
         m_channel->setWriteEnabled(true);

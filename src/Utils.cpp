@@ -126,19 +126,19 @@ bool DirHelper::CreateDirectory(const std::string& path) {
 
 Event_t EventHelper::ConvertToEventType(uint32_t type) {
     int result = 0;
-    if (POLLIN == type || POLLPRI == type || POLLRDHUP == type) {
+    if (POLLIN & type || POLLPRI & type || POLLRDHUP & type) {
         result |= static_cast<int>(Event_t::EvTypeRead);
     }
 
-    if (POLLOUT == type) {
+    if (POLLOUT & type) {
         result |= static_cast<int>(Event_t::EvTypeWrite);
     }
 
-    if (POLLHUP == type || POLLNVAL == type) {
+    if (POLLHUP & type || POLLNVAL & type) {
         result |= static_cast<int>(Event_t::EvTypeClose);
     }
 
-    if (POLLERR == type) {
+    if (POLLERR & type) {
         result |= static_cast<int>(Event_t::EvTypeError);
     }
 

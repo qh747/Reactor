@@ -27,7 +27,7 @@ EpPoller::~EpPoller() {
 }
 
 Timestamp EpPoller::poll(int timeoutMs, ChannelWrapperList& activeChannels, int& errCode) {
-    int activeEventSize = epoll_wait(m_epollFd, m_epollEventList.data(), static_cast<int>(m_epollEventList.size()), timeoutMs);
+    int activeEventSize = ::epoll_wait(m_epollFd, m_epollEventList.data(), static_cast<int>(m_epollEventList.size()), timeoutMs);
     auto now = std::chrono::system_clock::now();
     if (activeEventSize < 0) {
         if (errno == EINTR) {
@@ -149,12 +149,12 @@ bool EpPoller::removeChannel(Channel::Ptr channel) {
 
     if (!result) {
         LOG_ERROR << "Remove channel error. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
-                  << " event type: " << StringHelper::EventTypeToString(evType) << ".";
+            << " event type: " << StringHelper::EventTypeToString(evType) << ".";
         return false;
     }
 
     LOG_INFO << "Remove channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
-             << " event type: " << StringHelper::EventTypeToString(evType) << ".";
+        << " event type: " << StringHelper::EventTypeToString(evType) << ".";
     return true;
 }
 
@@ -163,21 +163,21 @@ bool EpPoller::operateControl(int fd, Event_t ev, PollerCtrl_t op) const {
     event.data.fd = fd;
     event.events = static_cast<int>(ev);
 
-    if (epoll_ctl(m_epollFd, static_cast<int>(op), fd, &event) < 0) {
+    if (::epoll_ctl(m_epollFd, static_cast<int>(op), fd, &event) < 0) {
         if (PollerCtrl_t::PollerRemove == op) {
             LOG_ERROR << "Epoll ctrl error. id: " << m_id << " fd: " << fd << " op: " << StringHelper::PollerCtrlTypeToString(op)
-                      << " event type: " << StringHelper::EventTypeToString(ev) << ".";
+                << " event type: " << StringHelper::EventTypeToString(ev) << ".";
         }
         else {
             LOG_FATAL << "Epoll ctrl error. id: " << m_id << " fd: " << fd << " op: " << StringHelper::PollerCtrlTypeToString(op)
-                      << " event type: " << StringHelper::EventTypeToString(ev) << ".";
+                << " event type: " << StringHelper::EventTypeToString(ev) << ".";
         }
 
         return false;
     }
     else {
         LOG_INFO << "Epoll ctrl success. id: " << m_id << " fd: " << fd << " op: " << StringHelper::PollerCtrlTypeToString(op)
-                 << " event type: " << StringHelper::EventTypeToString(ev) << ".";
+            << " event type: " << StringHelper::EventTypeToString(ev) << ".";
         return true;
     }
 }

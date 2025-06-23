@@ -26,10 +26,6 @@ EventLoop::EventLoop(std::string id)
 }
 
 EventLoop::~EventLoop() {
-    if (nullptr != m_wakeupChannel) {
-        m_wakeupChannel->close();
-    }
-
     ::close(m_wakeupChannel->getFd());
     LOG_DEBUG << "Eventloop deconstruct. id: " << m_id;
 }
@@ -98,6 +94,11 @@ bool EventLoop::init() {
 }
 
 bool EventLoop::loop() {
+    if (nullptr == m_poller) {
+        LOG_ERROR << "Eventloop loop error. not initialized. id: " << m_id;
+        return false;
+
+    }
     // 防止重复启动事件循环
     if (m_running) {
         LOG_WARN << "Eventloop loop warning. looped already. id: " << m_id;
@@ -126,6 +127,11 @@ bool EventLoop::loop() {
             }
         }
 
+        if (!m_running) {
+            LOG_INFO << "Eventloop loop warning. quit event loop. id: " << m_id;
+            break;
+        }
+
         // 处理事件
         for (const auto& channelWrapper : m_activeChannels) {
             channelWrapper->m_channel->handleEvent(channelWrapper->m_activeEvType, returnTime);
@@ -147,15 +153,24 @@ bool EventLoop::quit() {
         return true;
     }
 
+    // 退出定时器队列
+    if (nullptr != m_timerQueue) {
+        m_timerQueue->quit();
+    }
+
     // 修改事件循环运行状态标志位
     m_running = false;
 
     // 如果当前处于poll()等待或退出其他线程的事件循环时，则唤醒
     if (m_waiting || !this->isInCurrentThread()) {
-        if (!wakeup()) {
+        if (!this->wakeup()) {
             LOG_ERROR << "Eventloop quit error. wakeup failed. id: " << m_id;
             return false;
         }
+    }
+
+    if (nullptr != m_wakeupChannel) {
+        m_wakeupChannel->close();
     }
 
     return true;

@@ -97,10 +97,6 @@ private:
  */
 class TimerQueue : public Noncopyable, public std::enable_shared_from_this<TimerQueue> {
 public:
-    // 允许以下类初始化TimerQueue
-    friend class Net::EventLoop;
-
-public:
     using Ptr = std::shared_ptr<TimerQueue>;
     using WkPtr = std::weak_ptr<TimerQueue>;
     using TimerId = uint64_t;
@@ -111,6 +107,18 @@ public:
     ~TimerQueue();
 
 public:
+    /**
+     * @brief  初始化timer queue
+     * @return 初始化结果
+     */
+    bool init();
+
+    /**
+     * @brief  退出timer queue
+     * @return 退出结果
+     */
+    bool quit();
+
     /**
      * @brief  添加定时器任务
      * @return 添加结果
@@ -129,12 +137,6 @@ public:
     bool delTimerTask(TimerId id);
 
 private:
-    /**
-     * @brief  初始化timer queue
-     * @return 初始化结果
-     */
-    bool init();
-
     /**
      * @brief  处理事件
      * @return 处理结果

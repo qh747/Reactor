@@ -17,19 +17,22 @@ namespace Net {
  */
 class EventLoop : public Noncopyable, public std::enable_shared_from_this<EventLoop> {
 public:
-    friend class Thread::EventLoopThread;
-
-public:
     using Ptr = std::shared_ptr<EventLoop>;
     using WkPtr = std::weak_ptr<EventLoop>;
     using Task = std::function<void()>;
     using TaskList = std::list<Task>;
 
 public:
-    explicit EventLoop(std::string  id);
+    explicit EventLoop(std::string id);
     ~EventLoop();
 
 public:
+    /**
+     * @brief  初始化eventLoop
+     * @return 初始化结果
+     */
+    bool init();
+
     /**
      * @brief  启动事件循环
      * @return 启动结果
@@ -130,13 +133,15 @@ public:
         return m_threadId == std::this_thread::get_id();
     }
 
-private:
     /**
-     * @brief  初始化eventLoop
-     * @return 初始化结果
+     * @brief  获取事件循环id
+     * @return 事件循环id
      */
-    bool init();
+    inline std::string getId() const {
+        return m_id;
+    }
 
+private:
     /**
      * @brief  处理事件
      * @return 处理结果

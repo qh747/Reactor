@@ -56,10 +56,8 @@ TimerQueue::TimerQueue(EventLoop::WkPtr loop, std::string id)
 
 TimerQueue::~TimerQueue() {
     if (nullptr != m_timerChannel) {
-        m_timerChannel->close();
+        this->quit();
     }
-
-    ::close(m_timerChannel->getFd());
     LOG_DEBUG << "Timer queue deconstruct. id: " << m_id;
 }
 
@@ -178,6 +176,17 @@ bool TimerQueue::init() {
     }
 
     LOG_DEBUG << "Timer queue init success. id: " << m_id;
+    return true;
+}
+
+bool TimerQueue::quit() {
+    if (nullptr != m_timerChannel) {
+        m_timerChannel->close();
+        ::close(m_timerChannel->getFd());
+
+        m_timerChannel.reset();
+    }
+
     return true;
 }
 

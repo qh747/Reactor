@@ -20,7 +20,7 @@ public:
     using ThreadPtr = std::shared_ptr<std::thread>;
 
 public:
-    explicit EventLoopThread(std::string  id, ThreadInitCb cb = nullptr);
+    explicit EventLoopThread(std::string id, ThreadInitCb cb = nullptr);
     ~EventLoopThread();
 
 public:

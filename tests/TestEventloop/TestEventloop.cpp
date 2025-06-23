@@ -2,14 +2,12 @@
 #include <memory>
 #include <iostream>
 #include <Net/EventLoop.h>
-#include <Thread/EventLoopThread.h>
 using namespace Net;
-using namespace Thread;
 
-void FuncTestFst() {
-    std::cout << "NET EVENTLOOP TEST FIRST -----------------------------" << std::endl;
+void FuncTest() {
+    std::cout << "NET EVENTLOOP TEST -----------------------------" << std::endl;
 
-    EventLoop::Ptr loop = std::make_shared<EventLoop>("EV_FST_TEST");
+    EventLoop::Ptr loop = std::make_shared<EventLoop>("EV_TEST");
     loop->init();
 
     // 指定10秒后退出事件循环
@@ -43,7 +41,7 @@ void FuncTestFst() {
 }
 
 int main() {
-    FuncTestFst();
+    FuncTest();
 
     return 0;
 }

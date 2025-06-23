@@ -175,7 +175,7 @@ public:
     static bool IsReusePort(int fd);
 
     /**
-     * @brief  设置套接字是否禁用 Nagle 算法
+     * @brief  设置套接字是否禁用Nagle算法
      * @return 设置结果
      * @param  fd 套接字描述符
      * @param  enabled 是否禁用

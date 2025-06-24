@@ -43,11 +43,15 @@ EventLoopThreadPool::EventLoopThreadPool(unsigned int numWorkThreads, const Thre
 
 EventLoopThreadPool::~EventLoopThreadPool() {
     // 退出主线程
-    m_eventLoopMainThread->quit();
+    if (nullptr != m_eventLoopMainThread) {
+        m_eventLoopMainThread->quit();
+    }
 
     // 退出工作线程
     for (auto& loop : m_eventLoopWorkThreads) {
-        loop->quit();
+        if (nullptr != loop) {
+            loop->quit();
+        }
     }
 
     LOG_DEBUG << "EventLoopThreadPool deconstruct. numThreads: " << m_eventLoopWorkThreads.size() << ". id: " << m_id;

@@ -10,7 +10,7 @@
 namespace Utils {
 
 // 日志宏定义
-#define LOG(level) Logger(level, StringHelper::GetFileName(__FILE__), __LINE__)
+#define LOG(level) Logger(level, StringHelper::GetFileName(__FILE__), __LINE__, __func__)
 
 // 便捷宏定义
 #define LOG_DEBUG LOG(LogLevel::DEBUG)
@@ -35,12 +35,12 @@ enum class LogLevel {
  */
 class Logger : public Noncopyable {
 public:
-    using LogPrintCb = std::function<void(const std::string&, int, const std::string&)>;
+    using LogPrintCb = std::function<void(const std::string&, int, const std::string&, const std::string&)>;
     using LogPrintMap = std::unordered_map<LogLevel, LogPrintCb>;
 
 public:
-    Logger(LogLevel level, std::string file, int line)
-        : m_line(line), m_level(level), m_file(std::move(file)) {
+    Logger(LogLevel level, std::string file, int line, std::string func)
+        : m_line(line), m_level(level), m_file(std::move(file)), m_func(std::move(func)) {
     }
 
     ~Logger() {
@@ -99,8 +99,11 @@ private:
     // 日志级别
     LogLevel m_level;
 
-    // 输出日志所在文件
+    // 日志所在文件
     std::string m_file;
+
+    // 日志所在函数
+    std::string m_func;
 
     // 日志内容缓冲区
     std::ostringstream m_buffer;

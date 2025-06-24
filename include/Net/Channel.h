@@ -139,6 +139,14 @@ private:
     }
 
     /**
+     * @brief 设置监听事件类型
+     * @param type 事件类型
+     */
+    inline void setEvType(Event_t type) {
+        m_listenEvType = type;
+    }
+
+    /**
      * @brief  无需校验的事件处理
      * @return 处理结果
      * @param  type 发生事件类型

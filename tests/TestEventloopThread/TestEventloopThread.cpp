@@ -64,6 +64,5 @@ void FuncTest() {
 
 int main() {
     FuncTest();
-
     return 0;
 }

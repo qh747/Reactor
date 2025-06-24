@@ -117,6 +117,7 @@ bool EventLoop::loop() {
         // 等待事件触发
         m_waiting = true;
         Timestamp returnTime = m_poller->poll(POLLER_DEFAULT_WAIT_TIME, m_activeChannels, errCode);
+
         if (0 != errCode) {
             if (EINTR != errCode && ETIMEDOUT != errCode) {
                 LOG_ERROR << "Eventloop loop error. poll failed. id: " << m_id << " errno: " << errno << ", error: " << strerror(errno);
@@ -125,11 +126,6 @@ bool EventLoop::loop() {
             else {
                 continue;
             }
-        }
-
-        if (!m_running) {
-            LOG_INFO << "Eventloop loop warning. quit event loop. id: " << m_id;
-            break;
         }
 
         // 处理事件
@@ -163,16 +159,19 @@ bool EventLoop::quit() {
 
     // 如果当前处于poll()等待或退出其他线程的事件循环时，则唤醒
     if (m_waiting || !this->isInCurrentThread()) {
-        if (!this->wakeup()) {
-            LOG_ERROR << "Eventloop quit error. wakeup failed. id: " << m_id;
-            return false;
-        }
+        auto channelWkPtr = m_wakeupChannel->weak_from_this();
+        this->executeTaskInLoop([channelWkPtr]() {
+            if (!channelWkPtr.expired()) {
+                auto channel = channelWkPtr.lock();
+                channel->close();
+            }
+        });
     }
-
-    if (nullptr != m_wakeupChannel) {
+    else {
         m_wakeupChannel->close();
     }
 
+    LOG_INFO << "Eventloop quit success. id: " << m_id;
     return true;
 }
 
@@ -215,9 +214,14 @@ bool EventLoop::removeChannel(const ChannelPtr& channel) const {
     }
 
     // 判断channel是否与当前eventLoop关联
-    auto channelOwnerLoop = channel->getOwnerLoop();
-    if (nullptr == channel || channelOwnerLoop.expired() || channelOwnerLoop.lock()->m_threadId != m_threadId) {
-        LOG_ERROR << "Eventloop remove channel error. channel owner event loop invalid. id: " << m_id;
+    auto channelOwnerLoop= channel->getOwnerLoop();
+    if (channelOwnerLoop.expired()) {
+        LOG_ERROR << "Eventloop remove channel error. channel owner event loop invalid.";
+        return false;
+    }
+
+    if (channelOwnerLoop.lock()->m_threadId != m_threadId) {
+        LOG_ERROR << "Eventloop remove channel error. channel owner event loop not in current thread. id: " << m_id;
         return false;
     }
 

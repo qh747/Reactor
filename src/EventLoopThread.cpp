@@ -22,6 +22,16 @@ EventLoopThread::~EventLoopThread() {
         this->quit();
     }
 
+    // 等待线程退出
+    if (nullptr != m_thread) {
+        if (m_thread->joinable()) {
+            LOG_DEBUG << "event loop thread start join.";
+            m_thread->join();
+            LOG_DEBUG << "event loop thread join success.";
+        }
+        m_thread.reset();
+    }
+
     LOG_DEBUG << "EventLoopThread deconstruct. id: " << m_id << " thread id: " << m_threadId;
 }
 
@@ -100,6 +110,9 @@ void EventLoopThread::quit() {
         LOG_WARN << "Event loop thread quit warning. thread is already quit. id: " << m_id << " thread id: " << m_threadId;
         return;
     }
+    else {
+        m_threadExitFlag = true;
+    }
 
     // 退出事件循环
     {
@@ -111,16 +124,7 @@ void EventLoopThread::quit() {
         }
     }
 
-    // 等待线程退出
-    if (nullptr != m_thread) {
-        if (m_thread->joinable()) {
-            m_thread->join();
-        }
-        m_thread.reset();
-    }
-
-    m_threadExitFlag = true;
-    LOG_INFO << "Event loop thread stopped. id: " << m_id << " thread id: " << m_threadId;
+    LOG_INFO << "Event loop thread quit. id: " << m_id << " thread id: " << m_threadId;
 }
 
 } // namespace Thread

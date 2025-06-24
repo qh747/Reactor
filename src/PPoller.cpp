@@ -125,6 +125,9 @@ bool PPoller::removeChannel(Channel::Ptr channel) {
     State_t state = channel->getState();
     channel->setState(State_t::StatePending);
 
+    Event_t evType = channel->getEvType();
+    channel->setEvType(Event_t::EvTypeNone);
+
     // 移除channel
     int fd = channel->getFd();
     if (m_channelMap.end() != m_channelMap.find(fd)) {
@@ -132,7 +135,7 @@ bool PPoller::removeChannel(Channel::Ptr channel) {
     }
 
     LOG_INFO << "Remove channel success. id: " << m_id << " fd: " << fd << " state: " << StringHelper::StateTypeToString(state)
-        << " event type: " << StringHelper::EventTypeToString(channel->getEvType()) << ".";
+        << " event type: " << StringHelper::EventTypeToString(evType) << ".";
     return true;
 }
 

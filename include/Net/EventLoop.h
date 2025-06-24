@@ -141,6 +141,14 @@ public:
         return m_id;
     }
 
+    /**
+     * @brief  获取事件循环所属线程id
+     * @return 事件循环所属线程id
+     */
+    inline std::thread::id getThreadId() const {
+        return m_threadId;
+    }
+
 private:
     /**
      * @brief  处理事件

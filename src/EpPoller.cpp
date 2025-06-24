@@ -140,6 +140,8 @@ bool EpPoller::removeChannel(Channel::Ptr channel) {
     // epoll移除
     int fd = channel->getFd();
     Event_t evType = channel->getEvType();
+    channel->setEvType(Event_t::EvTypeNone);
+
     bool result = this->operateControl(fd, evType, PollerCtrl_t::PollerRemove);
 
     // 移除channel

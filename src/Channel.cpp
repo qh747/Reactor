@@ -109,11 +109,15 @@ bool Channel::close() {
         return true;
     }
 
-    // 监听事件类型更新
-    m_listenEvType = Event_t::EvTypeNone;
-
     // 在事件循环中移除channel
-    return m_ownerLoop.lock()->removeChannel(this->shared_from_this());
+    if (!m_ownerLoop.expired()) {
+        LOG_DEBUG << "Channel close success. fd: " << m_fd;
+        return m_ownerLoop.lock()->removeChannel(this->shared_from_this());
+    }
+    else {
+        m_listenEvType = Event_t::EvTypeNone;
+        return true;
+    }
 }
 
 bool Channel::handleEvent(Event_t type, Timestamp recvTime) {

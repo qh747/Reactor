@@ -35,7 +35,7 @@ Connection::Connection(const EventLoopWkPtr& loop, const Socket::Ptr& sock)
 
     // 设置默认回调函数
     m_connCb = [](const Connection::Ptr& conn, bool isConn) {
-        LOG_WARN << "Connection connection callback function not regist. " << conn->getConnectionInfo();
+        LOG_WARN << "Connection connect callback function not regist. " << conn->getConnectionInfo();
     };
 
     m_readCb = [](const Connection::Ptr& conn, const Buffer::Ptr& buf, Timestamp recvTime) {
@@ -387,7 +387,7 @@ bool TcpConnection::send(const void* data, std::size_t size) {
         });
     }
 
-    // 剩余未未写入数据写入缓存
+    // 剩余未写入数据写入缓存
     m_outBuf->write(static_cast<const uint8_t*>(data) + writeSize, size);
     if (!m_channel->writeEnabled()) {
         m_channel->setWriteEnabled(true);
@@ -438,8 +438,8 @@ void TcpConnection::handleRead(Timestamp recvTime) {
         m_readCb(this->shared_from_this(), m_inBuf, recvTime);
     }
     else if (0 == readSize) {
-        // 读到0字节，可能是对端关闭了连接
-        LOG_WARN << "TcpConnection handleRead warning. read 0 bytes. " << this->getConnectionInfo() << " error: " << errCode;
+        // 读到0字节，对端关闭连接
+        LOG_INFO << "Remote disconnect. " << this->getConnectionInfo();
         this->handleClose(recvTime);
     }
     else {
@@ -482,8 +482,6 @@ void TcpConnection::handleWrite(Timestamp recvTime) {
 }
 
 void TcpConnection::handleClose(Timestamp recvTime) {
-    LOG_INFO << "TcpConnection handleClose. " << this->getConnectionInfo();
-
     auto weakSelf = this->weak_from_this();
     m_ownerLoop.lock()->executeTask([weakSelf]() {
         if (!weakSelf.expired()) {
@@ -498,6 +496,9 @@ void TcpConnection::handleClose(Timestamp recvTime) {
             }
         }
     });
+
+    // 关闭连接
+    this->close(0);
 }
 
 void TcpConnection::handleError(Timestamp recvTime) {

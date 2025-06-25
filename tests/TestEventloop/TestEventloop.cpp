@@ -13,7 +13,7 @@ void FuncTest() {
     // 指定10秒后退出事件循环
     EventLoop::WkPtr wkLoop = loop->weak_from_this();
     std::thread loopExitThread = std::thread([wkLoop]() {
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::this_thread::sleep_for(std::chrono::seconds(3));
 
         if (!wkLoop.expired()) {
             auto loop = wkLoop.lock();

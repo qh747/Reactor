@@ -67,13 +67,13 @@ bool EventLoop::init() {
         m_wakeupChannel->setEventCb(Event_t::EvTypeRead, [weakSelf, evLoopId](Timestamp recvTime) {
             (void)recvTime;
 
-            if (weakSelf.expired()) {
-                LOG_ERROR << "Eventloop wakeup error. eventloop expired. id: " << evLoopId;
+            auto strongSelf = weakSelf.lock();
+            if (nullptr == strongSelf) {
+                LOG_ERROR << "Eventloop wakeup error. owner eventloop expired. id: " << evLoopId;
                 return;
             }
 
             // 读取数据并非主要目的，主要目的用于唤醒处于poll()等待的eventLoop
-            auto strongSelf = weakSelf.lock();
             uint64_t data = 0;
             if (::read(strongSelf->m_wakeupChannel->getFd(), &data, sizeof(data)) < sizeof(data)) {
                 LOG_ERROR << "Eventloop wakeup error. read failed. id: " << evLoopId << " errno: " << errno << ", error: " << strerror(errno);
@@ -119,12 +119,14 @@ bool EventLoop::loop() {
         Timestamp returnTime = m_poller->poll(POLLER_DEFAULT_WAIT_TIME, m_activeChannels, errCode);
 
         if (0 != errCode) {
-            if (EINTR != errCode && ETIMEDOUT != errCode) {
-                LOG_ERROR << "Eventloop loop error. poll failed. id: " << m_id << " errno: " << errno << ", error: " << strerror(errno);
-                return false;
+            if (EINTR == errCode || ETIMEDOUT == errCode) {
+                // 外部终端或超时则继续等待事件触发
+                continue;
             }
             else {
-                continue;
+                LOG_ERROR << "Eventloop loop error. poll failed. id: " << m_id << " errno: " << errno << ", error: " << strerror(errno);
+                m_waiting = false;
+                return false;
             }
         }
 
@@ -142,11 +144,11 @@ bool EventLoop::loop() {
     return true;
 }
 
-bool EventLoop::quit() {
+void EventLoop::quit() {
     // 防止重复退出事件循环
     if (!m_running) {
         LOG_WARN << "Eventloop quit warning. quited already. id: " << m_id;
-        return true;
+        return;
     }
 
     // 退出定时器队列
@@ -172,7 +174,6 @@ bool EventLoop::quit() {
     }
 
     LOG_INFO << "Eventloop quit success. id: " << m_id;
-    return true;
 }
 
 bool EventLoop::wakeup() const {

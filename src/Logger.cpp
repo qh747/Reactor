@@ -70,15 +70,15 @@ void Logger::flush() const {
 
     if (!LogPrintCbMap.empty()) {
         // 除第一次日志打印情况外都进入次逻辑
-        LogPrintCbMap[m_level](m_file, m_line, m_func, m_buffer.str());
+        LogPrintCbMap[m_level](m_file, m_line, m_buffer.str());
     }
     else {
         // 第一次日志打印进入此逻辑
-        LogPrintCbMap[LogLevel::DEBUG] = [](const std::string& file, int line, const std::string& func, const std::string& str) {
+        LogPrintCbMap[LogLevel::DEBUG] = [](const std::string& file, int line, const std::string& str) {
             std::lock_guard<std::mutex> lock(LogPrintCbLock);
 
             std::stringstream ss;
-            ss << "[DEBUG][" << CURRANT_TIME << "][" << file << "::" << func << "():" << line << "] " << str << std::endl;
+            ss << "[DEBUG][" << CURRANT_TIME << "][" << file << ":" << line << "] " << str << std::endl;
 
             if (m_enableWriteFile) {
                 LogFileWriter::Instance().write(ss.str());
@@ -87,11 +87,11 @@ void Logger::flush() const {
             std::cout << ss.str();
         };
 
-        LogPrintCbMap[LogLevel::INFO] = [](const std::string& file, int line, const std::string& func, const std::string& str) {
+        LogPrintCbMap[LogLevel::INFO] = [](const std::string& file, int line, const std::string& str) {
             std::lock_guard<std::mutex> lock(LogPrintCbLock);
 
             std::stringstream ss;
-            ss << "[INFO] [" << CURRANT_TIME << "][" << file << "::" << func << "():" << line << "] " << str << std::endl;
+            ss << "[INFO] [" << CURRANT_TIME << "][" << file << ":" << line << "] " << str << std::endl;
 
             if (m_enableWriteFile) {
                 LogFileWriter::Instance().write(ss.str());
@@ -100,11 +100,11 @@ void Logger::flush() const {
             std::cout << ss.str();
         };
 
-        LogPrintCbMap[LogLevel::WARN] = [](const std::string& file, int line, const std::string& func, const std::string& str) {
+        LogPrintCbMap[LogLevel::WARN] = [](const std::string& file, int line, const std::string& str) {
             std::lock_guard<std::mutex> lock(LogPrintCbLock);
 
             std::stringstream ss;
-            ss << "[WARN] [" << CURRANT_TIME << "][" << file << "::" << func << "():" << line << "] " << str << std::endl;
+            ss << "[WARN] [" << CURRANT_TIME << "][" << file << ":" << line << "] " << str << std::endl;
 
             if (m_enableWriteFile) {
                 LogFileWriter::Instance().write(ss.str());
@@ -113,11 +113,11 @@ void Logger::flush() const {
             std::cout << ss.str();
         };
 
-        LogPrintCbMap[LogLevel::ERROR] = [](const std::string& file, int line, const std::string& func, const std::string& str) {
+        LogPrintCbMap[LogLevel::ERROR] = [](const std::string& file, int line, const std::string& str) {
             std::lock_guard<std::mutex> lock(LogPrintCbLock);
 
             std::stringstream ss;
-            ss << "[ERROR][" << CURRANT_TIME << "][" << file << "::" << func << "():" << line << "] " << str << std::endl;
+            ss << "[ERROR][" << CURRANT_TIME << "][" << file << ":" << line << "] " << str << std::endl;
 
             if (m_enableWriteFile) {
                 LogFileWriter::Instance().write(ss.str());
@@ -126,11 +126,11 @@ void Logger::flush() const {
             std::cout << ss.str();
         };
 
-        LogPrintCbMap[LogLevel::FATAL] = [](const std::string& file, int line, const std::string& func, const std::string& str) {
+        LogPrintCbMap[LogLevel::FATAL] = [](const std::string& file, int line, const std::string& str) {
             std::lock_guard<std::mutex> lock(LogPrintCbLock);
 
             std::stringstream ss;
-            ss << "[FATAL][" << CURRANT_TIME << "][" << file << "::" << func << "():" << line << "] " << str << std::endl;
+            ss << "[FATAL][" << CURRANT_TIME << "][" << file << ":" << line << "] " << str << std::endl;
 
             if (m_enableWriteFile) {
                 LogFileWriter::Instance().write(ss.str());
@@ -140,7 +140,7 @@ void Logger::flush() const {
             std::exit(EXIT_FAILURE);
         };
 
-        LogPrintCbMap[m_level](m_file, m_line, m_func, m_buffer.str());
+        LogPrintCbMap[m_level](m_file, m_line, m_buffer.str());
     }
 }
 

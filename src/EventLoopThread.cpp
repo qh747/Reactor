@@ -32,7 +32,13 @@ EventLoopThread::~EventLoopThread() {
         m_thread.reset();
     }
 
-    LOG_DEBUG << "EventLoopThread deconstruct. id: " << m_id << " thread id: " << m_threadId;
+    if (!m_threadStartFlag) {
+        LOG_DEBUG << "EventLoopThread deconstruct. id: " << m_id << " current thread id: " << std::this_thread::get_id();
+    }
+    else {
+        LOG_DEBUG << "EventLoopThread deconstruct. id: " << m_id << " thread id: " << m_threadId
+            << " current thread id: " << std::this_thread::get_id();
+    }
 }
 
 void EventLoopThread::run() {
@@ -105,22 +111,48 @@ void EventLoopThread::run() {
 }
 
 void EventLoopThread::quit() {
+    // 判断线程是否未运行
+    if (!m_threadStartFlag) {
+        LOG_ERROR << "Event loop thread quit error. thread is not running. id: " << m_id;
+        return;
+    }
+
     // 校验线程是否已经退出
     if (m_threadExitFlag) {
         LOG_WARN << "Event loop thread quit warning. thread is already quit. id: " << m_id << " thread id: " << m_threadId;
         return;
     }
-    else {
-        m_threadExitFlag = true;
-    }
+
+    m_threadExitFlag = true;
 
     // 退出事件循环
     {
         std::lock_guard<std::mutex> lock(m_mutex);
 
-        if (nullptr != m_eventLoop) {
+        do {
+            // 事件循环无效
+            if (nullptr == m_eventLoop) {
+                break;
+            }
+
+            // 事件循环已退出
+            if (!m_eventLoop->isRunning()) {
+                break;
+            }
+
+            // 退出事件循环
             m_eventLoop->quit();
-            m_eventLoop.reset();
+
+        } while(false);
+    }
+
+    // 跨线程退出时确保线程安全退出
+    if (!m_eventLoop->isInCurrentThread()) {
+        // 最长等待3秒，超时后则不在等待
+        for (int count = 0; count < 3; ++count) {
+            if (m_eventLoop->isWaiting()) {
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
         }
     }
 

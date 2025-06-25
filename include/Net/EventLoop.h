@@ -41,9 +41,8 @@ public:
 
     /**
      * @brief  退出事件循环
-     * @return 退出结果
      */
-    bool quit();
+    void quit();
 
     /**
      * @brief  唤醒事件循环

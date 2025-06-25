@@ -21,7 +21,7 @@ void FuncTest() {
     }
 
     {
-        /*std::cout << "NET EVENTLOOP THREAD POOL TEST SECOND -----------------------------" << std::endl;
+        std::cout << "NET EVENTLOOP THREAD POOL TEST SECOND -----------------------------" << std::endl;
 
         EventLoopThreadPool::Ptr evThdPool = std::make_shared<EventLoopThreadPool>(1, funcThdInit);
 
@@ -49,7 +49,7 @@ void FuncTest() {
             });
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(5));*/
+        std::this_thread::sleep_for(std::chrono::seconds(3));
     }
 }
 

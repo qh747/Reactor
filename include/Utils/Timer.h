@@ -140,8 +140,9 @@ private:
     /**
      * @brief  处理事件
      * @return 处理结果
+     * @param  recvTime 接收时间
      */
-    bool handleTask();
+    bool handleTask(Timestamp recvTime);
 
     /**
      * @brief  获取超时定时器任务

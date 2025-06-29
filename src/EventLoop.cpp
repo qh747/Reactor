@@ -285,15 +285,29 @@ bool EventLoop::executeTaskInLoop(const Task& task, bool highPriority) {
 }
 
 bool EventLoop::addTimerAtSpecificTime(TimerQueue::TimerId& id, const TimerTask::Task& cb, Timestamp expires, double intervalSec) const {
+    if (nullptr == m_timerQueue) {
+        LOG_ERROR << "Eventloop add timer error. timer queue invalid. id: " << m_id;
+        return false;
+    }
     return m_timerQueue->addTimerTask(id, cb, expires, intervalSec);
 }
 
 bool EventLoop::addTimerAfterSpecificTime(TimerQueue::TimerId& id, const TimerTask::Task& cb, double delay, double intervalSec) const {
+    if (nullptr == m_timerQueue) {
+        LOG_ERROR << "Eventloop add timer error. timer queue invalid. id: " << m_id;
+        return false;
+    }
+
     auto firstRunTime = std::chrono::system_clock::now() + std::chrono::milliseconds(static_cast<int64_t>(delay * 1000));
     return m_timerQueue->addTimerTask(id, cb, firstRunTime, intervalSec);
 }
 
 bool EventLoop::delTimer(TimerId id) const {
+    if (nullptr == m_timerQueue) {
+        LOG_ERROR << "Eventloop del timer error. timer queue invalid. id: " << m_id;
+        return false;
+    }
+
     return m_timerQueue->delTimerTask(id);
 }
 

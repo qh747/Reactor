@@ -2,6 +2,7 @@
 #include <string>
 #include <cstdint>
 #include "Common/DataDef.h"
+#include "Common/TypeDef.h"
 using namespace Common;
 
 namespace Utils {
@@ -52,6 +53,13 @@ public:
      * @return 字符串格式当前日期
      */
     static std::string GetCurrentData();
+
+    /**
+     * @note   格式：YYYY-MM-DD
+     * @brief  格式化输出时间
+     * @return 字符串格式时间
+     */
+    static std::string PrintTime(const Timestamp& timestamp);
 };
 
 /**

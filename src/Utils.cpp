@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <sstream>
 #include <unordered_map>
+#include <ctime>
 #include <sys/stat.h>
 #include "Utils/Utils.h"
 
@@ -28,6 +29,22 @@ std::string TimeHelper::GetCurrentData() {
 
     strftime(buf, sizeof(buf), "%Y%m%d", &t);
     return buf;
+}
+
+std::string TimeHelper::PrintTime(const Timestamp& timestamp) {
+    auto fmtTime = std::chrono::system_clock::to_time_t(timestamp);
+
+    std::tm tm = {};
+    localtime_r(&fmtTime, &tm);
+
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
+
+    auto since_epoch = timestamp.time_since_epoch();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(since_epoch).count() % 1000;
+    oss << "." << std::setfill('0') << std::setw(3) << ms;
+
+    return oss.str();
 }
 
 const char* StringHelper::GetFileName(const char* path) {

@@ -216,8 +216,8 @@ bool Channel::handleEventWithoutCheck(Event_t type, Timestamp recvTime) {
     }
 
     // 事件处理
-    evCbIter->second(recvTime);
     LOG_INFO << "Channel handle event. fd: " << m_fd << " event type: " << StringHelper::EventTypeToString(type);
+    evCbIter->second(recvTime);
     return true;
 }
 

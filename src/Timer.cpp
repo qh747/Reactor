@@ -242,8 +242,8 @@ bool TimerQueue::getExpiredTasks(Timestamp expired, TimerTasks& expiredTasks) {
         auto taskExpire = (*iter)->getExpires();
         auto duration = expired > taskExpire ? expired - taskExpire : taskExpire - expired;
 
-        // 时间差在1ms内则认为任务超时
-        if (duration <= std::chrono::milliseconds(1)) {
+        // 移除超时任务
+        if (taskExpire <= expired || (taskExpire > expired && duration <= std::chrono::milliseconds(1))) {
             expiredTasks.insert(*iter);
             iter = m_timerTasks.erase(iter);
         }

@@ -37,7 +37,7 @@ bool TimerTask::reset() {
         LOG_ERROR << "Reset timer task error. timer task not repeat. id: " << m_id;
     }
 
-    auto intervalMs = std::chrono::duration<double, std::milli>(m_intervalSec);
+    auto intervalMs = std::chrono::duration<double, std::milli>(m_intervalSec * 1000);
     auto intervalDuration = std::chrono::duration_cast<std::chrono::system_clock::duration>(intervalMs);
     m_expires += intervalDuration;
     return true;
@@ -184,6 +184,7 @@ bool TimerQueue::addTimerTask(TimerId& id, const TimerTask::Task& cb, Timestamp 
 
         // 添加定时器任务
         strongSelf->m_timerTasks.insert(task);
+        LOG_DEBUG << "Add timer task success. id: " << timerQueueId << " timer task id: " << task->getId();
 
         // 重置定时器的超时时间
         if (isReset) {
@@ -197,7 +198,6 @@ bool TimerQueue::addTimerTask(TimerId& id, const TimerTask::Task& cb, Timestamp 
         }
     });
 
-    LOG_INFO << "Add timer task success. id: " << m_id << " timer task id: " << id;
     return true;
 }
 
@@ -225,12 +225,12 @@ bool TimerQueue::delTimerTask(TimerId id) {
                 strongSelf->m_cancelTimerTasks.insert(*iter);
             }
 
+            LOG_INFO << "Del timer task success. id: " << timerQueueId << " timer task id: " << id;
             strongSelf->m_timerTasks.erase(iter);
             break;
         }
     });
 
-    LOG_INFO << "Del timer task success. id: " << m_id << " timer task id: " << id;
     return true;
 }
 
@@ -267,10 +267,13 @@ bool TimerQueue::resetExpiredTimerTask() const {
     itimerspec spec = {};
     spec.it_value.tv_sec = nextExpiredMs.count() / 1000;
     spec.it_value.tv_nsec = (nextExpiredMs.count() % 1000) * 1000000;
-    if (::timerfd_settime(m_timerChannel->getFd(), 0, &spec, nullptr) < 0) {
-        LOG_ERROR << "Reset expired timer task error. timer fd settime failed. id: " << m_id << " errno: " << errno
-            << " error info: " << strerror(errno);
-        return false;
+
+    if (nullptr != m_timerChannel) {
+        if (::timerfd_settime(m_timerChannel->getFd(), 0, &spec, nullptr) < 0) {
+            LOG_ERROR << "Reset expired timer task error. timer fd settime failed. id: " << m_id << " errno: " << errno
+                << " error info: " << strerror(errno);
+            return false;
+        }
     }
 
     return true;

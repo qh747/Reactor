@@ -25,8 +25,17 @@ use for test reactor network model
 
 ``` cmd
 
- 1. cd bin
+ 1. cd bin/tests
  2. ./TestLog
+
+```
+
+# Example
+
+``` cmd
+
+ 1. cd bin/examples
+ 2. ./EchoServer
 
 ```
 

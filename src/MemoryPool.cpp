@@ -8,10 +8,10 @@
 
 namespace Memory {
 
-MemoryPool::MemoryPool(std::string  id, std::size_t size) : m_id(std::move(id)) {
+MemoryPool::MemoryPool(std::string id, std::size_t size) : m_id(std::move(id)) {
     // 申请内存池空间
     Memory mem = nullptr;
-    if (0 != posix_memalign(&mem, MEMORY_POOL_ALIGNMENT, size)) {
+    if (0 != posix_memalign(&mem, MEMORY_POOL_ALIGNMENT, size + sizeof(MemoryPool_dt))) {
         LOG_ERROR << "Create memory pool error. posix_memalign() failed. id" << m_id;
         return;
     }
@@ -29,7 +29,7 @@ MemoryPool::MemoryPool(std::string  id, std::size_t size) : m_id(std::move(id)) 
     m_pool->large   = nullptr;
     m_pool->clean   = nullptr;
 
-    LOG_DEBUG << "Construct memory pool. id" << m_id;
+    LOG_DEBUG << "Construct memory pool. id: " << m_id;
 }
 
 MemoryPool::~MemoryPool() {
@@ -58,7 +58,7 @@ MemoryPool::~MemoryPool() {
         }
     }
 
-    LOG_DEBUG << "Destruct memory pool. id" << m_id;
+    LOG_DEBUG << "Destruct memory pool. id: " << m_id;
 }
 
 void MemoryPool::reset() const {
@@ -83,7 +83,7 @@ void MemoryPool::reset() const {
         m_pool->current = m_pool;
     }
 
-    LOG_DEBUG << "Reset memory pool. id" << m_id;
+    LOG_DEBUG << "Reset memory pool. id: " << m_id;
 }
 
 MemoryPool::Memory MemoryPool::allocateMemory(std::size_t size) const {
@@ -102,7 +102,7 @@ MemoryPool::Memory MemoryPool::allocateMemory(std::size_t size, std::size_t alig
     // 创建内存
     Memory mem = nullptr;
     if (0 != posix_memalign(&mem, align, size)) {
-        LOG_ERROR << "Allocate new memory error. posix_memalign() failed. id" << m_id;
+        LOG_ERROR << "Allocate new memory error. posix_memalign() failed. id: " << m_id;
         return nullptr;
     }
 
@@ -209,7 +209,7 @@ MemoryPool::Memory MemoryPool::allocateSmallMemory(std::size_t size, bool align)
         }
 
         // 当前内存块剩余空间足够本次内存申请
-        std::size_t remainSize = current->data.end - start;
+        auto remainSize = static_cast<std::size_t>(current->data.end - start);
         if (remainSize >= size) {
             current->data.start = start + size;
             return start;
@@ -231,7 +231,7 @@ MemoryPool::Memory MemoryPool::allocateLargeMemory(std::size_t size) const {
 
     auto mem = malloc(size);
     if (nullptr == mem) {
-        LOG_ERROR << "Allocate large memory error. malloc() failed. id" << m_id;
+        LOG_ERROR << "Allocate large memory error. malloc() failed. id: " << m_id;
         return nullptr;
     }
 
@@ -278,7 +278,7 @@ MemoryPool::Memory MemoryPool::allocateNewMemory(std::size_t size) const {
     std::size_t memSize = m_pool->data.end - reinterpret_cast<uint8_t*>(m_pool);
 
     if (0 != posix_memalign(&mem, MEMORY_POOL_ALIGNMENT, memSize)) {
-        LOG_ERROR << "Allocate new memory error. posix_memalign() failed. id" << m_id;
+        LOG_ERROR << "Allocate new memory error. posix_memalign() failed. id: " << m_id;
         return nullptr;
     }
 

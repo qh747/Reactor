@@ -143,4 +143,18 @@ public:
     static Event_t ConvertToEventType(uint32_t type);
 };
 
+/**
+ * @brief 内存地址帮助类
+ */
+class MemoryAddrHelper : public NoncopyableConstructable {
+public:
+    /**
+     * @brief  获取对齐地址
+     * @return 对齐地址
+     * @param  addr 内存地址
+     * @param  align 对齐字节数
+     */
+    static uint8_t* GetAlignAddr(const uint8_t* addr, uint32_t align);
+};
+
 }; // namespace Utils

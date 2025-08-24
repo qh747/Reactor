@@ -1,5 +1,5 @@
 # Reactor
-use for test reactor network model
+used for test reactor network model
 
 # Compile Option
 

@@ -162,4 +162,11 @@ Event_t EventHelper::ConvertToEventType(uint32_t type) {
     return static_cast<Event_t>(result);
 }
 
+uint8_t* MemoryAddrHelper::GetAlignAddr(const uint8_t* addr, uint32_t align) {
+    uint32_t offset = reinterpret_cast<uintptr_t>(addr) + (align - 1);
+    offset &= ~(align - 1);
+
+    return reinterpret_cast<uint8_t*>(offset);
+}
+
 } // namespace Utils

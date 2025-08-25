@@ -157,4 +157,18 @@ public:
     static uint8_t* GetAlignAddr(const uint8_t* addr, uint32_t align);
 };
 
+/**
+ * @brief 随机数帮助类
+ */
+class RandomHelper : public NoncopyableConstructable {
+public:
+    /**
+     * @brief  获取指定范围随机数
+     * @return 指定范围随机数
+     * @param  low 随机数范围下限
+     * @param  high 随机数范围上限
+     */
+    static int GetRandomAddr(int low, int high);
+};
+
 }; // namespace Utils

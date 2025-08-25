@@ -1,4 +1,5 @@
 #include <chrono>
+#include <random>
 #include <iomanip>
 #include <sstream>
 #include <unordered_map>
@@ -167,6 +168,16 @@ uint8_t* MemoryAddrHelper::GetAlignAddr(const uint8_t* addr, uint32_t align) {
     offset &= ~static_cast<uintptr_t>(align - 1);
 
     return reinterpret_cast<uint8_t*>(offset);
+}
+
+int RandomHelper::GetRandomAddr(int low, int high) {
+    // 随机设备，用于生成种子
+    static std::random_device rd;
+    // 梅森旋转算法引擎
+    static std::mt19937 gen(rd());
+
+    std::uniform_int_distribution<> dis(low, high);
+    return dis(gen);
 }
 
 } // namespace Utils

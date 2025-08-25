@@ -72,6 +72,25 @@ public:
      */
     bool                freeMemory(Memory data) const;
 
+public:
+    /**
+     * @brief           获取内存池id
+     * @return          内存池id
+     */
+    inline std::string  getId() const { return m_id; }
+
+    /**
+     * @brief           判断内存池是否有效
+     * @return          判断结果
+     */
+    inline bool         isValid() const { return m_pool != nullptr && !m_id.empty(); }
+
+    /**
+     * @brief           获取内存池最大可申请小块内存大小
+     * @return          获取结果
+     */
+    inline std::size_t  getMaxSize() const { return (nullptr == m_pool) ? 0 : m_pool->maxSize; }
+
 private:
     /**
      * @brief           申请小块内存
@@ -95,25 +114,12 @@ private:
      */
     Memory              allocateNewMemory(std::size_t size) const;
 
-public:
-    /**
-     * @brief           获取内存池id
-     * @return          内存池id
-     */
-    inline std::string  getId() const { return m_id; }
-
-    /**
-     * @brief           判断内存池是否有效
-     * @return          判断结果
-     */
-    inline bool         isValid() const { return m_pool != nullptr; }
-
 private:
-    //                  内存池数据指针
-    MemoryPoolPtr       m_pool;
-
     //                  内存池ID
     std::string         m_id;
+
+    //                  内存池数据指针
+    MemoryPoolPtr       m_pool;
 };
 
 }; // namespace Memory

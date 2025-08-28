@@ -11,6 +11,9 @@ constexpr static uint32_t MEMORY_POOL_ALIGNMENT = 16;
 // 内存申请首字节对齐大小
 constexpr static uint32_t MEMORY_ALIGNMENT = sizeof(unsigned long);
 
+// 共享内存默认大小
+constexpr static std::size_t SHARE_MEMORY_DFT_SIZE = 4096;
+
 /**
  * @brief 小块内存数据结构
  */
@@ -107,14 +110,12 @@ using MemoryPoolPtr = MemoryPool_dt*;
  */
 typedef struct ShareMemoryNameDataType {
     //                                  字符串数据
-    uint8_t*                            data { nullptr };
+    const uint8_t*                      data { nullptr };
 
     //                                  字符串长度
     std::size_t                         size { 0 };
 
 } ShareMemoryName_dt;
-
-using ShareMemoryNamePtr = ShareMemoryName_dt*;
 
 /**
  * @brief 共享内存数据结构
@@ -130,7 +131,7 @@ typedef struct ShareMemoryDataType {
     bool                                exist { false };
 
     //                                  共享内存名称
-    ShareMemoryNamePtr                  name { nullptr };
+    ShareMemoryName_dt                  name;
 
 } ShareMemory_dt;
 

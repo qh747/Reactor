@@ -18,7 +18,7 @@ public:
     using Memory = void*;
 
 public:
-    ShareMemory(std::string id, const std::string& name = "", std::size_t size = 4096);
+    explicit ShareMemory(std::string id, const std::string& name = "", std::size_t size = 4096);
     ~ShareMemory();
 
 public:
@@ -27,8 +27,9 @@ public:
       * @return 写入的字节数
       * @param  data 数据指针
       * @param  size 数据大小
+      * @param  force 是否强制写入
       */
-     std::size_t write(const Memory data, std::size_t size);
+     std::size_t write(Memory data, std::size_t size, bool force = false) const;
 
      /**
       * @brief  读取数据
@@ -42,14 +43,17 @@ private:
     //                  共享内存id
     std::string         m_id;
 
+    //                  是否创建文件
+    bool                m_isCreat { false };
+
     //                  共享内存文件描述符
-    int                 m_fd;
+    int                 m_fd { -1 };
 
     //                  共享内存名称
     std::string         m_name;
 
     //                  共享内存数据指针
-    ShareMemoryPtr      m_shm;
+    ShareMemory_dt      m_shm;
 };
 
 }; // namespace Memory
